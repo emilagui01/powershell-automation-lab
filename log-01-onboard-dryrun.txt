@@ -1,0 +1,22 @@
+2026-10-01 14:27:08 [INFO] Run started by Administrator on DC01 | 18 rows from .\NewHires.csv | WhatIf: True
+2026-10-01 14:27:08 [INFO] WHATIF Maria Lopez -> mlopez | OU=HR | groups: GRP-HR, Lab Staff | home: \\DC01\Home$\mlopez
+2026-10-01 14:27:09 [INFO] WHATIF Kevin Nguyen -> knguyen | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\knguyen
+2026-10-01 14:27:09 [INFO] WHATIF Sarah Johnson -> sjohnson | OU=Finance | groups: GRP-Finance, Lab Staff | home: \\DC01\Home$\sjohnson
+2026-10-01 14:27:09 [INFO] WHATIF David Kim -> dkim | OU=Marketing | groups: GRP-Marketing, Lab Staff | home: \\DC01\Home$\dkim
+2026-10-01 14:27:09 [INFO] WHATIF Aisha Patel -> apatel | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\apatel
+2026-10-01 14:27:09 [INFO] WHATIF Jessica Smith -> jsmith2 (base name taken) | OU=Finance | groups: GRP-Finance, Lab Staff | home: \\DC01\Home$\jsmith2
+2026-10-01 14:27:09 [WARN] SKIP Carlos Rivera: unknown department 'Sales' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:27:09 [INFO] WHATIF Emily Chen -> echen | OU=HR | groups: GRP-HR, Lab Staff | home: \\DC01\Home$\echen
+2026-10-01 14:27:09 [INFO] WHATIF Steve Rogers -> srogers | OU=HR | groups: GRP-HR, Lab Staff | home: \\DC01\Home$\srogers
+2026-10-01 14:27:09 [INFO] WHATIF Natasha Romanoff -> nromanoff | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\nromanoff
+2026-10-01 14:27:09 [INFO] WHATIF Bruce Banner -> bbanner | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\bbanner
+2026-10-01 14:27:09 [INFO] WHATIF Pepper Potts -> ppotts | OU=Finance | groups: GRP-Finance, Lab Staff | home: \\DC01\Home$\ppotts
+2026-10-01 14:27:09 [INFO] WHATIF Wanda Maximoff -> wmaximoff | OU=Marketing | groups: GRP-Marketing, Lab Staff | home: \\DC01\Home$\wmaximoff
+2026-10-01 14:27:09 [INFO] WHATIF Sam Wilson -> swilson | OU=HR | groups: GRP-HR, Lab Staff | home: \\DC01\Home$\swilson
+2026-10-01 14:27:09 [INFO] WHATIF Carol Danvers -> cdanvers | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\cdanvers
+2026-10-01 14:27:09 [INFO] WHATIF Scott Lang -> slang | OU=Finance | groups: GRP-Finance, Lab Staff | home: \\DC01\Home$\slang
+2026-10-01 14:27:09 [WARN] SKIP Thor Odinson: unknown department 'Asgard' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:27:09 [WARN] SKIP Peter Parker: account already exists (pparker) - review manually
+2026-10-01 14:27:09 [INFO] Run finished | WhatIf: 15 | Skipped: 3
+2026-10-01 14:27:09 [INFO] Log: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-142708.log
+2026-10-01 14:27:09 [INFO] Results: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-142708-results.csv

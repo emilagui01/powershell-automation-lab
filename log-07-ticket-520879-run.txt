@@ -1,0 +1,11 @@
+2026-10-01 16:17:48 [INFO] Run started by Administrator on DC01 | 2 rows from .\NewHires-520879.csv | Ticket: #520879 | WhatIf: False
+2026-10-01 16:17:48 [OK] OK   created Stephen Strange -> sstrange in OU=IT
+2026-10-01 16:17:49 [OK] OK   sstrange added to GRP-IT, Lab Staff
+2026-10-01 16:17:49 [OK] OK   home folder \\DC01\Home$\sstrange (Modify for sstrange only)
+2026-10-01 16:17:49 [OK] OK   created Hope Van Dyne -> hvandyne in OU=Finance
+2026-10-01 16:17:49 [OK] OK   hvandyne added to GRP-Finance, Lab Staff
+2026-10-01 16:17:49 [OK] OK   home folder \\DC01\Home$\hvandyne (Modify for hvandyne only)
+2026-10-01 16:17:49 [WARN] Temporary passwords saved to C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161748-HANDOFF.csv - hand them over securely, then DELETE this file
+2026-10-01 16:17:49 [INFO] Run finished | Created: 2
+2026-10-01 16:17:49 [INFO] Log: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161748.log
+2026-10-01 16:17:49 [INFO] Results: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161748-results.csv

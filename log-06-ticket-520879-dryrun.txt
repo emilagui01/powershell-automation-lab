@@ -1,0 +1,6 @@
+2026-10-01 16:16:37 [INFO] Run started by Administrator on DC01 | 2 rows from .\NewHires-520879.csv | Ticket: #520879 | WhatIf: True
+2026-10-01 16:16:37 [INFO] WHATIF Stephen Strange -> sstrange | OU=IT | groups: GRP-IT, Lab Staff | home: \\DC01\Home$\sstrange
+2026-10-01 16:16:37 [INFO] WHATIF Hope Van Dyne -> hvandyne | OU=Finance | groups: GRP-Finance, Lab Staff | home: \\DC01\Home$\hvandyne
+2026-10-01 16:16:37 [INFO] Run finished | WhatIf: 2
+2026-10-01 16:16:37 [INFO] Log: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161637.log
+2026-10-01 16:16:37 [INFO] Results: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161637-results.csv

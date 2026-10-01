@@ -1,0 +1,8 @@
+2026-10-01 16:32:32 [INFO] Run started by Administrator | Ticket #125558 | WhatIf: False
+2026-10-01 16:32:32 [INFO] wmaximoff (Wanda Maximoff) | groups before: GRP-Marketing, Lab Staff
+2026-10-01 16:32:32 [OK] OK   wmaximoff disabled and password reset
+2026-10-01 16:32:32 [OK] OK   wmaximoff removed from 2 group(s)
+2026-10-01 16:32:32 [OK] OK   wmaximoff moved to Disabled Users, description stamped
+2026-10-01 16:32:32 [OK] OK   home folder archived to C:\Shares\Archive\wmaximoff-2026-10-01
+2026-10-01 16:32:32 [INFO] Run finished | Offboarded: 1
+2026-10-01 16:32:32 [INFO] Log: C:\Scripts\Lab3\Logs\Remove-LabUser-20261001-163232.log

@@ -1,0 +1,22 @@
+2026-10-01 14:55:20 [INFO] Run started by Administrator on DC01 | 18 rows from .\NewHires.csv | WhatIf: False
+2026-10-01 14:55:20 [WARN] SKIP Maria Lopez: account already exists (mlopez) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Kevin Nguyen: account already exists (knguyen) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Sarah Johnson: account already exists (sjohnson) - review manually
+2026-10-01 14:55:20 [WARN] SKIP David Kim: account already exists (dkim) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Aisha Patel: account already exists (apatel) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Jessica Smith: account already exists (jsmith2) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Carlos Rivera: unknown department 'Sales' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:55:20 [WARN] SKIP Emily Chen: account already exists (echen) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Steve Rogers: account already exists (srogers) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Natasha Romanoff: account already exists (nromanoff) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Bruce Banner: account already exists (bbanner) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Pepper Potts: account already exists (ppotts) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Wanda Maximoff: account already exists (wmaximoff) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Sam Wilson: account already exists (swilson) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Carol Danvers: account already exists (cdanvers) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Scott Lang: account already exists (slang) - review manually
+2026-10-01 14:55:20 [WARN] SKIP Thor Odinson: unknown department 'Asgard' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:55:20 [WARN] SKIP Peter Parker: account already exists (pparker) - review manually
+2026-10-01 14:55:20 [INFO] Run finished | Skipped: 18
+2026-10-01 14:55:20 [INFO] Log: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-145520.log
+2026-10-01 14:55:20 [INFO] Results: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-145520-results.csv

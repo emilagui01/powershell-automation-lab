@@ -1,0 +1,7 @@
+2026-10-01 15:15:09 [INFO] Run started by Administrator | Ticket #TEST | WhatIf: True
+2026-10-01 15:15:09 [INFO] slang (Scott Lang) | groups before: GRP-Finance, Lab Staff
+2026-10-01 15:15:09 [INFO] WHATIF slang would be disabled, removed from: GRP-Finance, Lab Staff, moved to Disabled Users, home folder -> C:\Shares\Archive\slang-2026-10-01
+2026-10-01 15:15:09 [ERROR] REFUSED Administrator (Administrator): protected account (admin, built-in or service account)
+2026-10-01 15:15:09 [WARN] SKIP tstark: no such user in AD
+2026-10-01 15:15:09 [INFO] Run finished | WhatIf: 1 | Refused: 1 | Skipped: 1
+2026-10-01 15:15:09 [INFO] Log: C:\Scripts\Lab3\Logs\Remove-LabUser-20261001-151509.log

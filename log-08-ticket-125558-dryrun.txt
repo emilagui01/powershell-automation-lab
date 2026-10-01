@@ -1,0 +1,5 @@
+2026-10-01 16:32:17 [INFO] Run started by Administrator | Ticket #125558 | WhatIf: True
+2026-10-01 16:32:17 [INFO] wmaximoff (Wanda Maximoff) | groups before: GRP-Marketing, Lab Staff
+2026-10-01 16:32:17 [INFO] WHATIF wmaximoff would be disabled, removed from: GRP-Marketing, Lab Staff, moved to Disabled Users, home folder -> C:\Shares\Archive\wmaximoff-2026-10-01
+2026-10-01 16:32:17 [INFO] Run finished | WhatIf: 1
+2026-10-01 16:32:17 [INFO] Log: C:\Scripts\Lab3\Logs\Remove-LabUser-20261001-163217.log

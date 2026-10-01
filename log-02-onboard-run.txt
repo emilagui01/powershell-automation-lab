@@ -1,0 +1,53 @@
+2026-10-01 14:31:08 [INFO] Run started by Administrator on DC01 | 18 rows from .\NewHires.csv | WhatIf: False
+2026-10-01 14:31:09 [OK] OK   created Maria Lopez -> mlopez in OU=HR
+2026-10-01 14:31:09 [OK] OK   mlopez added to GRP-HR, Lab Staff
+2026-10-01 14:31:09 [OK] OK   home folder \\DC01\Home$\mlopez (Modify for mlopez only)
+2026-10-01 14:31:09 [OK] OK   created Kevin Nguyen -> knguyen in OU=IT
+2026-10-01 14:31:09 [OK] OK   knguyen added to GRP-IT, Lab Staff
+2026-10-01 14:31:09 [OK] OK   home folder \\DC01\Home$\knguyen (Modify for knguyen only)
+2026-10-01 14:31:09 [OK] OK   created Sarah Johnson -> sjohnson in OU=Finance
+2026-10-01 14:31:09 [OK] OK   sjohnson added to GRP-Finance, Lab Staff
+2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\sjohnson (Modify for sjohnson only)
+2026-10-01 14:31:10 [OK] OK   created David Kim -> dkim in OU=Marketing
+2026-10-01 14:31:10 [OK] OK   dkim added to GRP-Marketing, Lab Staff
+2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\dkim (Modify for dkim only)
+2026-10-01 14:31:10 [OK] OK   created Aisha Patel -> apatel in OU=IT
+2026-10-01 14:31:10 [OK] OK   apatel added to GRP-IT, Lab Staff
+2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\apatel (Modify for apatel only)
+2026-10-01 14:31:10 [OK] OK   created Jessica Smith -> jsmith2 (base name taken) in OU=Finance
+2026-10-01 14:31:10 [OK] OK   jsmith2 added to GRP-Finance, Lab Staff
+2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\jsmith2 (Modify for jsmith2 only)
+2026-10-01 14:31:10 [WARN] SKIP Carlos Rivera: unknown department 'Sales' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:31:10 [OK] OK   created Emily Chen -> echen in OU=HR
+2026-10-01 14:31:10 [OK] OK   echen added to GRP-HR, Lab Staff
+2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\echen (Modify for echen only)
+2026-10-01 14:31:10 [OK] OK   created Steve Rogers -> srogers in OU=HR
+2026-10-01 14:31:11 [OK] OK   srogers added to GRP-HR, Lab Staff
+2026-10-01 14:31:11 [OK] OK   home folder \\DC01\Home$\srogers (Modify for srogers only)
+2026-10-01 14:31:11 [OK] OK   created Natasha Romanoff -> nromanoff in OU=IT
+2026-10-01 14:31:11 [OK] OK   nromanoff added to GRP-IT, Lab Staff
+2026-10-01 14:31:11 [OK] OK   home folder \\DC01\Home$\nromanoff (Modify for nromanoff only)
+2026-10-01 14:31:11 [OK] OK   created Bruce Banner -> bbanner in OU=IT
+2026-10-01 14:31:11 [OK] OK   bbanner added to GRP-IT, Lab Staff
+2026-10-01 14:31:11 [OK] OK   home folder \\DC01\Home$\bbanner (Modify for bbanner only)
+2026-10-01 14:31:11 [OK] OK   created Pepper Potts -> ppotts in OU=Finance
+2026-10-01 14:31:11 [OK] OK   ppotts added to GRP-Finance, Lab Staff
+2026-10-01 14:31:11 [OK] OK   home folder \\DC01\Home$\ppotts (Modify for ppotts only)
+2026-10-01 14:31:11 [OK] OK   created Wanda Maximoff -> wmaximoff in OU=Marketing
+2026-10-01 14:31:11 [OK] OK   wmaximoff added to GRP-Marketing, Lab Staff
+2026-10-01 14:31:11 [OK] OK   home folder \\DC01\Home$\wmaximoff (Modify for wmaximoff only)
+2026-10-01 14:31:11 [OK] OK   created Sam Wilson -> swilson in OU=HR
+2026-10-01 14:31:12 [OK] OK   swilson added to GRP-HR, Lab Staff
+2026-10-01 14:31:12 [OK] OK   home folder \\DC01\Home$\swilson (Modify for swilson only)
+2026-10-01 14:31:12 [OK] OK   created Carol Danvers -> cdanvers in OU=IT
+2026-10-01 14:31:12 [OK] OK   cdanvers added to GRP-IT, Lab Staff
+2026-10-01 14:31:12 [OK] OK   home folder \\DC01\Home$\cdanvers (Modify for cdanvers only)
+2026-10-01 14:31:12 [OK] OK   created Scott Lang -> slang in OU=Finance
+2026-10-01 14:31:12 [OK] OK   slang added to GRP-Finance, Lab Staff
+2026-10-01 14:31:12 [OK] OK   home folder \\DC01\Home$\slang (Modify for slang only)
+2026-10-01 14:31:12 [WARN] SKIP Thor Odinson: unknown department 'Asgard' (valid: IT, HR, Finance, Marketing)
+2026-10-01 14:31:12 [WARN] SKIP Peter Parker: account already exists (pparker) - review manually
+2026-10-01 14:31:12 [WARN] Temporary passwords saved to C:\Scripts\Lab3\Logs\New-LabUsers-20261001-143108-HANDOFF.csv - hand them over securely, then DELETE this file
+2026-10-01 14:31:12 [INFO] Run finished | Created: 15 | Skipped: 3
+2026-10-01 14:31:12 [INFO] Log: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-143108.log
+2026-10-01 14:31:12 [INFO] Results: C:\Scripts\Lab3\Logs\New-LabUsers-20261001-143108-results.csv

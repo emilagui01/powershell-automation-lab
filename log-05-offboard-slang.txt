@@ -1,0 +1,8 @@
+2026-10-01 15:16:29 [INFO] Run started by Administrator | Ticket #1001 | WhatIf: False
+2026-10-01 15:16:29 [INFO] slang (Scott Lang) | groups before: GRP-Finance, Lab Staff
+2026-10-01 15:16:29 [OK] OK   slang disabled and password reset
+2026-10-01 15:16:29 [OK] OK   slang removed from 2 group(s)
+2026-10-01 15:16:30 [OK] OK   slang moved to Disabled Users, description stamped
+2026-10-01 15:16:30 [OK] OK   home folder archived to C:\Shares\Archive\slang-2026-10-01
+2026-10-01 15:16:30 [INFO] Run finished | Offboarded: 1
+2026-10-01 15:16:30 [INFO] Log: C:\Scripts\Lab3\Logs\Remove-LabUser-20261001-151629.log

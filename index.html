@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerShell Automation Lab | Emil Aguirre Herrera</title>
+<meta name="description" content="PowerShell automation for an Active Directory lab domain: bulk onboarding from CSV, safe offboarding, account health reporting, and an osTicket ticket workflow. Home Lab 3 of 3 by Emil Aguirre Herrera.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Windows PowerShell ISE, default light theme */
+    --desk: #0f2a4a;
+    --chrome: #f0f0f0;
+    --chrome-line: #c9c9c9;
+    --menu: #f5f6f7;
+    --toolbar-a: #fbfcfe;
+    --toolbar-b: #e3e9f3;
+    --tabstrip: #f6ead9;
+    --tab-line: #c7b79f;
+    --pane: #ffffff;
+    --gutter-num: #2b91af;
+    --fold: #c8c8c8;
+    --ink: #1e1e1e;
+    --ink-dim: #5a5a5a;
+    --console: #012456;
+    --console-ink: #f5f5f5;
+    --console-dim: #b7c3d6;
+    --splitter: #d5dbe8;
+    --sel: #cce8ff;
+    --sel-line: #99d1ff;
+    /* ISE token colours */
+    --t-cmd: #0000ff;
+    --t-param: #000080;
+    --t-str: #8b0000;
+    --t-var: #ff4500;
+    --t-com: #006400;
+    --t-kw: #00008b;
+    --t-type: #008080;
+    --t-num: #800080;
+    --t-op: #a9a9a9;
+    --t-attr: #00bfff;
+    /* console Write-Host colours */
+    --c-green: #00ff00;
+    --c-yellow: #ffff00;
+    --c-red: #ff3b3b;
+    --c-cyan: #00ffff;
+    --c-gray: #c0c0c0;
+    --mono: "Lucida Console", "Lucida Sans Typewriter", "IBM Plex Mono", Consolas, monospace;
+    --sans: "Segoe UI", "Open Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    background: var(--desk);
+    background-image: radial-gradient(ellipse at 15% 0%, #1f4f86 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, #0b3d6e 0%, transparent 50%);
+    min-height: 100vh;
+  }
+  a { color: #0066cc; }
+  a:hover { color: #003e7e; }
+  code { font-family: var(--mono); font-size: .9em; color: var(--t-str); background: #f4f4f4; padding: 0 3px; border-radius: 2px; }
+
+  /* ---------- ISE application window ---------- */
+  .ise { max-width: 1280px; margin: 18px auto 30px; background: var(--chrome); border: 1px solid #6a87ad; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+  @media (max-width: 1320px) { .ise { margin: 0 auto; border-left: 0; border-right: 0; } }
+
+  .titlebar { display: flex; align-items: center; gap: 8px; height: 32px; background: #fff; padding-left: 8px; font-size: 13px; }
+  .titlebar svg { flex: none; }
+  .titlebar .title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .titlebar .wbtn { width: 46px; height: 32px; display: grid; place-items: center; font-size: 14px; color: #222; }
+  .titlebar .wbtn.x:hover { background: #e81123; color: #fff; }
+
+  .menubar { display: flex; flex-wrap: wrap; background: var(--menu); font-size: 13.5px; padding: 0 2px; border-bottom: 1px solid #e3e3e3; }
+  .menubar a { color: #000; text-decoration: none; padding: 3px 8px; border: 1px solid transparent; }
+  .menubar a:hover, .menubar a:focus-visible { background: var(--sel); border-color: var(--sel-line); outline: none; }
+
+  .toolbar { display: flex; align-items: center; gap: 2px; padding: 3px 6px; background: linear-gradient(var(--toolbar-a), var(--toolbar-b)); border-bottom: 1px solid #c5cfdd; overflow: hidden; }
+  .toolbar i { width: 24px; height: 22px; display: grid; place-items: center; font-style: normal; font-size: 14px; color: #2c5d9b; border: 1px solid transparent; border-radius: 2px; flex: none; }
+  .toolbar i.sep { width: 1px; height: 20px; background: #b9c4d4; margin: 0 5px; }
+  .toolbar i.run { color: #1a9a1a; font-size: 15px; }
+  .toolbar i.stop { color: #777; }
+  .toolbar i.layout { width: 26px; }
+  .toolbar i.layout b { display: block; width: 18px; height: 14px; border: 1.5px solid #555; border-radius: 1px; background: linear-gradient(#fff 45%, #555 45%, #555 55%, #fff 55%); }
+  .toolbar i.layout.side b { background: linear-gradient(90deg, #fff 45%, #555 45%, #555 55%, #fff 55%); }
+  .toolbar i.layout.full b { background: #fff; }
+
+  /* ---------- workspace ---------- */
+  .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 0; align-items: start; }
+  main { min-width: 0; padding: 10px 10px 14px; border-right: 1px solid var(--chrome-line); }
+
+  /* ---------- document = tab strip + script pane (+ console) ---------- */
+  .doc { margin: 0 0 16px; scroll-margin-top: 10px; border: 1px solid #b8bfcc; background: var(--pane); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 2px; align-items: flex-end; background: linear-gradient(#fbf3e8, var(--tabstrip)); padding: 6px 6px 0; border-bottom: 1px solid var(--tab-line); }
+  .tab { font-size: 14px; padding: 4px 10px 4px 12px; background: #fff; border: 1px solid var(--tab-line); border-bottom: 0; position: relative; top: 1px; white-space: nowrap; display: inline-flex; gap: 10px; align-items: center; color: #000; font-family: var(--sans); }
+  .tab .x { font-size: 13px; color: #333; }
+  button.tab { cursor: pointer; background: #eef1f6; color: #333; }
+  button.tab[aria-selected="true"] { background: #fff; color: #000; font-weight: 600; }
+  button.tab:hover { background: #fff; }
+  button.tab:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+
+  .script { position: relative; padding: 14px 22px 10px 64px; }
+  .script::before { /* region fold guide */
+    content: ""; position: absolute; left: 46px; top: 32px; bottom: 30px; width: 1px; background: var(--fold);
+  }
+  .script h2 { font-family: var(--mono); font-size: 19px; font-weight: 600; margin: 0 0 10px; color: var(--ink); position: relative; line-height: 1.4; }
+  .script h2 .fold { position: absolute; left: -24px; top: 4px; width: 11px; height: 11px; border: 1px solid #909090; background: #fff; font-size: 0; }
+  .script h2 .fold::after { content: ""; position: absolute; left: 2px; right: 2px; top: 4px; height: 1px; background: #333; }
+  .script h2 .rg { color: var(--t-com); font-weight: 400; }
+  .endregion { font-family: var(--mono); color: var(--t-com); font-size: 14px; margin: 14px 0 0; position: relative; }
+  .endregion::before { content: ""; position: absolute; left: -18px; top: -6px; width: 8px; height: 14px; border-left: 1px solid var(--fold); border-bottom: 1px solid var(--fold); }
+  .script h3 { font-size: 17px; margin: 22px 0 6px; color: #000; }
+  .script h3 .cm { font-family: var(--mono); color: var(--t-com); font-weight: 400; font-size: 15px; margin-right: 6px; }
+  .script p { margin: 6px 0 10px; }
+  .script ul, .script ol { margin: 6px 0 12px; padding-left: 22px; }
+  .script li { margin: 3px 0; }
+  .lede { font-size: 17px; }
+  @media (max-width: 640px) {
+    .script { padding: 12px 14px 10px 30px; }
+    .script::before { left: 16px; }
+    .script h2 .fold { left: -20px; }
+    .endregion::before { display: none; }
+  }
+
+  /* comment-based help header */
+  .help { font-family: var(--mono); color: var(--t-com); font-size: 15px; line-height: 1.55; margin: 0; }
+  .help .ind { padding-left: 2.2em; margin: 2px 0 4px; }
+  .help .notes { display: grid; grid-template-columns: max-content 1fr; gap: 1px 0; }
+  .help .notes dt { color: #1e1e1e; padding-right: .6em; }
+  .help .notes dt::after { content: " :"; white-space: pre; }
+  .help .notes dd { margin: 0; }
+  @media (max-width: 520px) { .help .ind { padding-left: 1.1em; } .help .notes { grid-template-columns: 1fr; } .help .notes dt::after { content: ":"; } .help .notes dd { padding-left: 1em; margin-bottom: 3px; } }
+  #overview td.mono { white-space: nowrap; }
+  .viewer .tabs { flex-wrap: nowrap; overflow-x: auto; }
+  @media (max-width: 640px) { .tab.deco { display: none; } }
+  .help h1 { display: inline; font-family: var(--sans); font-size: clamp(26px, 4.4vw, 40px); line-height: 1.15; font-weight: 700; color: #00205b; letter-spacing: -.3px; }
+  .help .kw { color: var(--t-com); font-weight: 600; }
+  .help .val { color: #1e1e1e; }
+  .help a { color: #0066cc; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; font-family: var(--sans); }
+  .btn { display: inline-block; font-size: 14px; padding: 4px 14px; border: 1px solid #adadad; background: linear-gradient(#fdfdfd, #e6e6e6); color: #000; text-decoration: none; border-radius: 2px; }
+  .btn:hover { border-color: #0078d7; background: #e5f1fb; color: #000; }
+  .btn.primary { border-color: #0078d7; box-shadow: inset 0 0 0 1px #0078d7; }
+
+  /* ---------- console pane ---------- */
+  .splitter { height: 5px; background: var(--splitter); border-top: 1px solid #c1c8d6; border-bottom: 1px solid #c1c8d6; }
+  .console { background: var(--console); color: var(--console-ink); font-family: var(--mono); font-size: 14px; line-height: 1.45; padding: 12px 16px 14px; overflow-x: auto; white-space: pre; margin: 0; }
+  .script .console { margin: 10px 0 14px; border: 1px solid #0a3a7a; }
+  .console .ps { color: var(--console-ink); }
+  .console .g { color: var(--c-green); } .console .y { color: var(--c-yellow); } .console .r { color: var(--c-red); }
+  .console .cy { color: var(--c-cyan); } .console .gr { color: var(--c-gray); } .console .d { color: var(--console-dim); }
+  .console.wrap { white-space: pre-wrap; word-break: break-word; }
+  .console a { color: var(--c-cyan); }
+
+  /* ---------- code in script pane ---------- */
+  pre.code { font-family: var(--mono); font-size: 14px; line-height: 1.5; margin: 8px 0 14px; padding: 8px 0; background: #fff; border: 1px solid #dadada; overflow-x: auto; color: #000; white-space: pre; counter-reset: none; }
+  pre.code .ln { display: inline-block; width: 3.4em; padding-right: .9em; text-align: right; color: var(--gutter-num); user-select: none; -webkit-user-select: none; }
+  pre.code.nolines { padding: 8px 12px; }
+  .k-cmd { color: var(--t-cmd); } .p { color: var(--t-param); } .s { color: var(--t-str); } .v { color: var(--t-var); }
+  .c { color: var(--t-com); } .kw { color: var(--t-kw); } .t { color: var(--t-type); } .n { color: var(--t-num); }
+  .o { color: var(--t-op); } .a { color: var(--t-attr); }
+
+  /* script viewer */
+  .viewer { border: 1px solid #b8bfcc; margin: 8px 0 14px; }
+  .viewer .tabs { padding-top: 5px; }
+  .viewer pre.code { border: 0; margin: 0; max-height: 620px; overflow: auto; }
+  .viewer .console { max-height: 260px; overflow: auto; }
+  .viewer .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; font-size: 13px; background: var(--chrome); border-top: 1px solid var(--chrome-line); padding: 3px 10px; }
+  .js .panel[hidden] { display: none; }
+
+  /* ---------- tables ---------- */
+  .tbl { overflow-x: auto; margin: 8px 0 14px; border: 1px solid #d4d4d4; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th { text-align: left; background: #f3f3f3; font-weight: 600; padding: 5px 12px; border-bottom: 1px solid #d4d4d4; white-space: nowrap; }
+  td { padding: 5px 12px; border-bottom: 1px solid #ececec; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono, th.mono { font-family: var(--mono); font-size: 14px; }
+  .ok { color: #107c10; font-weight: 600; } .warn { color: #9a6700; font-weight: 600; } .bad { color: #c50f1f; font-weight: 600; }
+
+  pre.tree { font-family: var(--mono); font-size: 14px; line-height: 1.5; background: #fff; border: 1px solid #dadada; padding: 10px 14px; overflow-x: auto; margin: 8px 0 14px; }
+  pre.tree b { color: var(--t-cmd); font-weight: 400; }
+  pre.tree em { color: var(--t-com); font-style: normal; }
+  pre.tree u { color: var(--t-str); text-decoration: none; }
+
+  /* ---------- screenshots ---------- */
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin: 10px 0 8px; }
+  figure { margin: 0; border: 1px solid #c9c9c9; background: #fafafa; }
+  figure a { display: block; }
+  figure img { display: block; width: 100%; height: auto; aspect-ratio: 16/10; object-fit: cover; object-position: top left; background: #e9e9e9; }
+  figcaption { font-size: 14px; padding: 6px 10px 8px; line-height: 1.45; }
+  figcaption::before { content: "# "; color: var(--t-com); font-family: var(--mono); }
+
+  /* ---------- callouts ---------- */
+  .note { border-left: 3px solid #0078d7; background: #f0f6fc; padding: 8px 12px; margin: 12px 0; }
+  .note.sec { border-color: #c50f1f; background: #fdf1f2; }
+  .issue { margin: 14px 0; border: 1px solid #e3c3c6; }
+  .issue .err { background: var(--console); font-family: var(--mono); font-size: 14px; color: var(--c-red); padding: 8px 12px; white-space: pre-wrap; word-break: break-word; }
+  .issue .err .d { color: var(--console-dim); }
+  .issue .body { padding: 8px 12px 10px; }
+  .issue .row { margin: 3px 0; }
+  .issue .lbl { display: inline-block; min-width: 6.2em; font-weight: 600; color: #555; }
+  .issue .fix .lbl { color: #107c10; }
+
+  /* ---------- Commands add-on pane ---------- */
+  aside.commands { position: sticky; top: 0; max-height: 100vh; display: flex; flex-direction: column; background: var(--chrome); }
+  .cmd-head { display: flex; justify-content: space-between; align-items: flex-end; padding: 6px 6px 0; background: linear-gradient(#fbf3e8, var(--tabstrip)); border-bottom: 1px solid var(--tab-line); }
+  .cmd-head .tab { font-weight: 600; }
+  .cmd-head .close { font-size: 15px; padding: 0 4px 4px; }
+  .cmd-body { padding: 10px 10px 10px; display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1; background: #fff; }
+  .field { display: grid; grid-template-columns: 62px 1fr auto; gap: 6px; align-items: center; font-size: 14px; }
+  .field .box { border: 1px solid #a9a9a9; padding: 2px 6px; background: #fff; font-size: 14px; display: flex; justify-content: space-between; height: 28px; align-items: center; }
+  .field input { width: 100%; border: 1px solid #a9a9a9; padding: 3px 6px; font: inherit; height: 28px; }
+  .field input:focus { outline: none; border-color: #0078d7; }
+  .field .refresh { font-size: 13px; padding: 2px 8px; border: 1px solid #adadad; background: linear-gradient(#fdfdfd, #e6e6e6); }
+  .cmd-list { border: 1px solid #a9a9a9; overflow-y: auto; flex: 1; min-height: 120px; padding: 4px 0; }
+  .cmd-list .grp { font-size: 14px; padding: 2px 10px; color: #000; }
+  .cmd-list a { display: block; padding: 2px 10px 2px 14px; color: #000; text-decoration: none; font-size: 14.5px; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cmd-list a:hover { background: #e5f3ff; border-color: #cce8ff; }
+  .cmd-list a.on { background: var(--sel); border-color: var(--sel-line); }
+  .cmd-list a small { color: #6a6a6a; font-size: 12.5px; margin-left: 4px; }
+  .cmd-list .none { padding: 4px 12px; color: #777; font-size: 14px; display: none; }
+  .cmd-btns { display: flex; justify-content: flex-end; gap: 6px; }
+  .cmd-btns .btn { font-size: 13.5px; padding: 2px 12px; }
+
+  /* ---------- status bar ---------- */
+  .statusbar { display: flex; align-items: center; gap: 14px; font-size: 13px; padding: 3px 10px; border-top: 1px solid var(--chrome-line); background: var(--chrome); }
+  .statusbar .grow { flex: 1; }
+  .statusbar .zoom { display: flex; align-items: center; gap: 8px; }
+  .statusbar .zoom i { display: block; width: 120px; height: 2px; background: #bbb; position: relative; }
+  .statusbar .zoom i::after { content: ""; position: absolute; left: 34%; top: -6px; width: 8px; height: 14px; background: #f4f4f4; border: 1px solid #888; }
+  .statusbar .vsep { width: 1px; height: 16px; background: #bbb; }
+
+  footer.page { text-align: center; color: #c9d6e8; font-size: 14px; padding: 4px 16px 24px; }
+  footer.page a { color: #fff; margin: 0 6px; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 980px) {
+    .workspace { grid-template-columns: 1fr; }
+    main { border-right: 0; padding: 8px 8px 10px; }
+    aside.commands { position: static; max-height: none; order: -1; border-bottom: 1px solid var(--chrome-line); }
+    .cmd-list { max-height: none; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; }
+    .cmd-list .grp { width: 100%; }
+    .cmd-list a { display: inline-block; border: 1px solid #d0d7e2; background: #f7f9fc; padding: 1px 8px; font-size: 14px; }
+    .cmd-list a small { display: none; }
+    .field.mod { display: none; }
+    .toolbar i.hide-sm { display: none; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 15.5px; }
+    .titlebar .wbtn { width: 34px; }
+    .statusbar .zoom, .statusbar .vsep.z { display: none; }
+    .cmd-btns { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="ise">
+
+  <!-- ===================== WINDOW CHROME ===================== -->
+  <div class="titlebar">
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="2" width="16" height="14" rx="1.5" fill="#2c6fb7"/><rect x="1" y="2" width="16" height="3" fill="#7fb2e8"/><path d="M4 8.2l3 2-3 2" stroke="#fff" stroke-width="1.6" fill="none"/><path d="M8.5 12.5h5" stroke="#fff" stroke-width="1.6"/></svg>
+    <span class="title">Administrator: Windows PowerShell ISE &mdash; Home Lab 3: PowerShell Automation</span>
+    <span class="wbtn" aria-hidden="true">&#8212;</span><span class="wbtn" aria-hidden="true">&#9744;</span><span class="wbtn x" aria-hidden="true">&#10005;</span>
+  </div>
+  <nav class="menubar" aria-label="Site">
+    <a href="#files" title="All files in this repo">File</a>
+    <a href="https://github.com/emilagui01/powershell-automation-lab" title="Source on GitHub">Edit</a>
+    <a href="#source" title="Read the scripts">View</a>
+    <a href="#reporting" title="Generated reports">Tools</a>
+    <a href="#troubleshooting" title="Troubleshooting log">Debug</a>
+    <a href="#tickets" title="osTicket workflow">Add-ons</a>
+    <a href="https://emilagui01.github.io/#labs" title="All labs">Help</a>
+  </nav>
+  <div class="toolbar" aria-hidden="true">
+    <i>&#128462;</i><i>&#128194;</i><i>&#128190;</i><i class="sep"></i><i class="hide-sm">&#9986;</i><i class="hide-sm">&#10697;</i><i class="hide-sm">&#128203;</i><i class="sep hide-sm"></i><i>&#8630;</i><i>&#8631;</i><i class="sep"></i><i class="run">&#9654;</i><i class="hide-sm">&#9655;</i><i class="stop">&#9632;</i><i class="sep"></i><i class="hide-sm">&#128421;</i><i class="sep hide-sm"></i><i class="layout"><b></b></i><i class="layout side"><b></b></i><i class="layout full"><b></b></i>
+  </div>
+
+  <div class="workspace">
+  <main id="content">
+
+  <!-- ===================== HEADER ===================== -->
+  <section class="doc" id="top" aria-label="Lab summary">
+    <div class="tabs"><span class="tab">README.ps1 <span class="x" aria-hidden="true">&#10005;</span></span><span class="tab deco" style="background:#eef1f6;font-weight:400">New-LabUsers.ps1</span><span class="tab deco" style="background:#eef1f6;font-weight:400">Remove-LabUser.ps1</span><span class="tab deco" style="background:#eef1f6;font-weight:400">Get-LabUserReport.ps1</span></div>
+    <div class="script" style="padding-top:12px">
+<div class="help">
+<div>&lt;#</div>
+<div class="kw">.SYNOPSIS</div>
+<div class="ind"><h1>PowerShell Automation Lab</h1></div>
+<div class="kw">.DESCRIPTION</div>
+<div class="ind val">Three scripts that run the account lifecycle of an Active Directory domain: bulk onboarding from a CSV, safe offboarding, and an account health report. Each one is driven by a help desk ticket.</div>
+<div class="kw">.NOTES</div>
+<dl class="ind val notes">
+  <dt>Series</dt><dd>Home Lab 3 of 3 &middot; <b style="color:#107c10">Complete</b></dd>
+  <dt>Domain</dt><dd>emillab.local, from <a href="https://emilagui01.github.io/ad-homelab/">Lab 1</a> (Windows Server 2022)</dd>
+  <dt>Tickets</dt><dd>osTicket, from <a href="https://emilagui01.github.io/helpdesk-lab/">Lab 2</a> (Ubuntu Server 24.04)</dd>
+  <dt>Ran on</dt><dd>DC01, Windows PowerShell 5.1 ISE, ActiveDirectory module</dd>
+  <dt>Author</dt><dd>Emil Aguirre Herrera &middot; CompTIA Network+ &middot; AZ-900</dd>
+</dl>
+<div>#&gt;</div>
+</div>
+      <div class="actions">
+        <a class="btn primary" href="#source">Read the scripts</a>
+        <a class="btn" href="report-4-final.html" target="_blank" rel="noopener">Open the final report</a>
+        <a class="btn" href="https://github.com/emilagui01/powershell-automation-lab">GitHub repo</a>
+        <a class="btn" href="https://emilagui01.github.io/#labs">All labs</a>
+      </div>
+    </div>
+    <div class="splitter"></div>
+<pre class="console" aria-label="Lab results summary"><span class="ps">PS C:\Scripts\Lab3&gt; Get-Lab3Summary | Format-List</span>
+
+<span class="d">Scripts            :</span> New-LabUsers.ps1, Remove-LabUser.ps1, Get-LabUserReport.ps1
+<span class="d">Lines of PowerShell:</span> 586
+<span class="d">Accounts created   :</span> <span class="g">17</span>  (15 from CSV, 2 from ticket #520879)
+<span class="d">Accounts offboarded:</span> <span class="g">2</span>   (slang, wmaximoff; nothing deleted)
+<span class="d">Bad rows caught    :</span> <span class="y">3</span>   (unknown department x2, existing account x1)
+<span class="d">Reports generated  :</span> <span class="g">4</span>   (HTML + CSV, linked below)
+<span class="d">Tickets worked     :</span> <span class="g">2</span>   (#520879 New Hire Request, #125558 Employee Offboarding)
+
+<span class="ps">PS C:\Scripts\Lab3&gt; </span></pre>
+  </section>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="doc" id="overview" aria-labelledby="h-ov">
+    <div class="tabs"><span class="tab">about_Lab3.help.txt <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-ov"><span class="fold"></span><span class="rg">#region</span> Overview</h2>
+      <p class="lede">The first two labs built a Windows domain and a help desk to support it. This lab automates the work that help desk does most often: setting up accounts for new hires, shutting off access when someone leaves, and checking which accounts need attention.</p>
+      <p>Every script previews its changes with <code>-WhatIf</code> before making them, logs every action, and is safe to run twice. Each real run is tied to an osTicket ticket number, which is written onto the account in AD. Anyone looking at an account later can find the request behind it.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Phase</th><th>Script</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>1. Onboarding</td><td class="mono"><a href="#onboarding">New-LabUsers.ps1</a></td><td>Reads a CSV of new hires; creates each account in its department OU, adds groups, and builds a private H: drive</td></tr>
+          <tr><td>2. Offboarding</td><td class="mono"><a href="#offboarding">Remove-LabUser.ps1</a></td><td>Disables, strips group access, moves to Disabled Users, archives the home folder; refuses protected accounts</td></tr>
+          <tr><td>3. Reporting</td><td class="mono"><a href="#reporting">Get-LabUserReport.ps1</a></td><td>Finds locked out, disabled, never-used and password-problem accounts; writes HTML and CSV</td></tr>
+          <tr><td>4. Tickets</td><td>osTicket + all three</td><td>HR requests arrive as tickets; scripts run with the ticket number; results go back on the ticket</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Skills:</b> PowerShell scripting (advanced functions, <code>SupportsShouldProcess</code>, error handling, pipeline input), the ActiveDirectory module, NTFS and share permissions with <code>icacls</code> and <code>New-SmbShare</code>, user lifecycle (joiner, leaver), audit logging, reporting, and ITSM workflow.</p>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== LAYOUT ===================== -->
+  <section class="doc" id="layout" aria-labelledby="h-lay">
+    <div class="tabs"><span class="tab">Get-LabLayout.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-lay"><span class="fold"></span><span class="rg">#region</span> What was added to the domain</h2>
+      <p>Lab 3 reuses the Lab 1 domain. Department OUs sit <em>inside</em> <code>OU=Lab Users</code>, so the existing Lab 1 Group Policy (S: drive mapping, Control Panel restriction) applies to every new hire automatically. Disabled accounts go to an OU <em>outside</em> it, so those policies stop applying.</p>
+<pre class="tree" aria-label="Active Directory structure">
+<b>emillab.local</b>
+├── <b>Lab Users</b>              <em># Lab 1 GPOs: S: drive map, Control Panel restricted</em>
+│   ├── <b>IT</b>                 <em># GRP-IT</em>
+│   ├── <b>HR</b>                 <em># GRP-HR</em>
+│   ├── <b>Finance</b>            <em># GRP-Finance</em>
+│   └── <b>Marketing</b>          <em># GRP-Marketing</em>
+├── <b>Groups</b>                 <em># GRP-IT, GRP-HR, GRP-Finance, GRP-Marketing</em>
+├── <b>Disabled Users</b>         <em># offboarded accounts land here, no GPOs</em>
+├── <b>Service Accounts</b>       <em># svc-osticket, refused by the offboarding script</em>
+└── <b>Lab Computers</b>          <em># CLIENT01, RDP for Lab Staff</em>
+
+<b>DC01</b>  <u>C:\Shares\Home</u>     shared as <u>\\DC01\Home$</u>  <em># hidden share, one private folder per user</em>
+      <u>C:\Shares\Archive</u>  not shared            <em># Administrators and SYSTEM only</em>
+</pre>
+      <h3><span class="cm">#</span>One-time prep on DC01</h3>
+      <p>Run once before the scripts. Shown condensed; the screenshots below show it on DC01.</p>
+<pre class="code"><span class="ln">1</span><span class="c"># Department OUs inside Lab Users (so the Lab 1 GPOs apply), and one group per department</span>
+<span class="ln">2</span><span class="k-cmd">New-ADOrganizationalUnit</span> <span class="p">-Name</span> <span class="s">"Groups"</span> <span class="p">-Path</span> <span class="s">"DC=emillab,DC=local"</span>
+<span class="ln">3</span><span class="kw">foreach</span> (<span class="v">$d</span> <span class="kw">in</span> <span class="s">"IT"</span>, <span class="s">"HR"</span>, <span class="s">"Finance"</span>, <span class="s">"Marketing"</span>) {
+<span class="ln">4</span>    <span class="k-cmd">New-ADOrganizationalUnit</span> <span class="p">-Name</span> <span class="v">$d</span> <span class="p">-Path</span> <span class="s">"OU=Lab Users,DC=emillab,DC=local"</span>
+<span class="ln">5</span>    <span class="k-cmd">New-ADGroup</span> <span class="p">-Name</span> <span class="s">"GRP-<span class="v">$d</span>"</span> <span class="p">-GroupScope</span> Global <span class="p">-Path</span> <span class="s">"OU=Groups,DC=emillab,DC=local"</span>
+<span class="ln">6</span>}
+<span class="ln">7</span>
+<span class="ln">8</span><span class="c"># Hidden home-folder share: users can open the root, but not each other's folders</span>
+<span class="ln">9</span><span class="k-cmd">New-Item</span> C:\Shares\Home <span class="p">-ItemType</span> Directory
+<span class="ln">10</span>icacls C:\Shares\Home <span class="o">/</span>inheritance:r <span class="o">/</span>grant <span class="s">"BUILTIN\Administrators:(OI)(CI)F"</span> <span class="s">"NT AUTHORITY\SYSTEM:(OI)(CI)F"</span> <span class="s">"EMILLAB\Domain Users:(RX)"</span>
+<span class="ln">11</span><span class="k-cmd">New-SmbShare</span> <span class="p">-Name</span> <span class="s">"Home$"</span> <span class="p">-Path</span> <span class="s">"C:\Shares\Home"</span> <span class="p">-FullAccess</span> <span class="s">"EMILLAB\Domain Admins"</span> <span class="p">-ChangeAccess</span> <span class="s">"EMILLAB\Domain Users"</span>
+<span class="ln">12</span>
+<span class="ln">13</span><span class="c"># Phase 2: where offboarded accounts and files go</span>
+<span class="ln">14</span><span class="k-cmd">New-ADOrganizationalUnit</span> <span class="p">-Name</span> <span class="s">"Disabled Users"</span> <span class="p">-Path</span> <span class="s">"DC=emillab,DC=local"</span>
+<span class="ln">15</span><span class="k-cmd">New-Item</span> C:\Shares\Archive <span class="p">-ItemType</span> Directory
+<span class="ln">16</span>icacls C:\Shares\Archive <span class="o">/</span>inheritance:r <span class="o">/</span>grant <span class="s">"BUILTIN\Administrators:(OI)(CI)F"</span> <span class="s">"NT AUTHORITY\SYSTEM:(OI)(CI)F"</span></pre>
+      <div class="tbl"><table>
+        <thead><tr><th>Home$ permission</th><th>Who</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Share</td><td>Domain Admins: Full &middot; Domain Users: Change</td><td>Share permissions stay broad; NTFS does the real limiting</td></tr>
+          <tr><td>NTFS on <code>Home</code></td><td>Administrators, SYSTEM: Full &middot; Domain Users: Read &amp; Execute, this folder only</td><td>Users can open the share but cannot see into anyone's folder</td></tr>
+          <tr><td>NTFS on each user folder</td><td>That user: Modify (added by the script)</td><td>Only the owner and admins can open it</td></tr>
+        </tbody>
+      </table></div>
+      <div class="shots">
+        <figure><a href="p-prep-share-ous.jpg"><img src="p-prep-share-ous.jpg" alt="PowerShell creating the Home$ share, writing NewHires.csv, and listing the department OUs and GRP groups" loading="lazy"></a><figcaption>Home$ share, test CSV, department OUs and groups</figcaption></figure>
+        <figure><a href="p-prep-csv.jpg"><img src="p-prep-csv.jpg" alt="Import-Csv showing the new hire test data before any accounts were created" loading="lazy"></a><figcaption>Checking the test CSV with Import-Csv</figcaption></figure>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== ONBOARDING ===================== -->
+  <section class="doc" id="onboarding" aria-labelledby="h-on">
+    <div class="tabs"><span class="tab">New-LabUsers.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-on"><span class="fold"></span><span class="rg">#region</span> Phase 1: Onboarding</h2>
+      <p>One command turns a CSV from HR into working accounts. For each row the script:</p>
+      <ol>
+        <li>Checks the row: first and last name present, department one of IT, HR, Finance, Marketing</li>
+        <li>Skips anyone who already has an account, matching on first and last name <em>or</em> display name, and flags them for a person to review</li>
+        <li>Builds a unique username: first initial + last name, letters and numbers only, with a number added if taken (<code>jsmith</code> &rarr; <code>jsmith2</code>)</li>
+        <li>Creates the account in the department OU with a random 12-character temporary password and <i>change password at next sign-in</i></li>
+        <li>Adds it to <code>GRP-&lt;Department&gt;</code> and <code>Lab Staff</code></li>
+        <li>Creates <code>\\DC01\Home$\&lt;username&gt;</code>, grants only that user Modify, and maps it as H:</li>
+        <li>Writes a log, a results CSV, and a separate password handoff file meant to be deleted after use</li>
+      </ol>
+      <h3><span class="cm">#</span>Test data, with problems on purpose</h3>
+      <p><a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/NewHires.csv">NewHires.csv</a> has 18 rows: 15 good ones, plus rows the script should refuse.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Row</th><th>Problem</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Jessica Smith, Finance</td><td><code>jsmith</code> already taken by a Lab 1 user</td><td class="ok">Created as jsmith2</td></tr>
+          <tr><td>Carlos Rivera, Sales</td><td>No Sales department</td><td class="warn">Skipped</td></tr>
+          <tr><td>Thor Odinson, Asgard</td><td>Not a real department</td><td class="warn">Skipped</td></tr>
+          <tr><td>Peter Parker, IT</td><td>Already has an account (<code>pparker</code>, made by hand in Lab 1)</td><td class="warn">Skipped, flagged for review</td></tr>
+        </tbody>
+      </table></div>
+      <h3><span class="cm">#</span>Real run</h3>
+      <p>From the log timestamps, 15 accounts with their groups and home folders took about four seconds. A second run of the same CSV skipped all 18 rows and created nothing.</p>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\New-LabUsers.ps1 -CsvPath .\NewHires.csv</span>
+<span class="gr">2026-10-01 14:31:08 [INFO] Run started by Administrator on DC01 | 18 rows from .\NewHires.csv | WhatIf: False</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   created Maria Lopez -&gt; mlopez in OU=HR</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   mlopez added to GRP-HR, Lab Staff</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   home folder \\DC01\Home$\mlopez (Modify for mlopez only)</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   created Kevin Nguyen -&gt; knguyen in OU=IT</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   knguyen added to GRP-IT, Lab Staff</span>
+<span class="g">2026-10-01 14:31:09 [OK] OK   home folder \\DC01\Home$\knguyen (Modify for knguyen only)</span>
+<span class="d">   ...</span>
+<span class="g">2026-10-01 14:31:10 [OK] OK   created Jessica Smith -&gt; jsmith2 (base name taken) in OU=Finance</span>
+<span class="g">2026-10-01 14:31:10 [OK] OK   jsmith2 added to GRP-Finance, Lab Staff</span>
+<span class="g">2026-10-01 14:31:10 [OK] OK   home folder \\DC01\Home$\jsmith2 (Modify for jsmith2 only)</span>
+<span class="y">2026-10-01 14:31:10 [WARN] SKIP Carlos Rivera: unknown department 'Sales' (valid: IT, HR, Finance, Marketing)</span>
+<span class="d">   ...</span>
+<span class="y">2026-10-01 14:31:12 [WARN] SKIP Thor Odinson: unknown department 'Asgard' (valid: IT, HR, Finance, Marketing)</span>
+<span class="y">2026-10-01 14:31:12 [WARN] SKIP Peter Parker: account already exists (pparker) - review manually</span>
+<span class="y">2026-10-01 14:31:12 [WARN] Temporary passwords saved to C:\Scripts\Lab3\Logs\New-LabUsers-20261001-143108-HANDOFF.csv - hand them over securely, then DELETE this file</span>
+<span class="gr">2026-10-01 14:31:12 [INFO] Run finished | Created: 15 | Skipped: 3</span></pre>
+      <p>Logs: <a href="log-01-onboard-dryrun.txt">dry run</a> &middot; <a href="log-02-onboard-run.txt">real run</a> &middot; <a href="log-03-onboard-rerun.txt">second run (18 skipped)</a></p>
+      <h3><span class="cm">#</span>From the new hire's side</h3>
+      <p>Bruce Banner signed in on CLIENT01 with his temporary password, had to set his own, and landed with his private <b>H:</b> drive and the shared <b>S:</b> drive already mapped. Control Panel was blocked by the Lab 1 policy. Nothing was set up by hand.</p>
+      <div class="shots">
+        <figure><a href="n-dryrun.jpg"><img src="n-dryrun.jpg" alt="Dry run table: 15 accounts would be created, 3 rows skipped" loading="lazy"></a><figcaption>-WhatIf dry run: 15 would be created, 3 skipped</figcaption></figure>
+        <figure><a href="n-run.jpg"><img src="n-run.jpg" alt="Real run results table showing 15 accounts created with OU, groups and home folder" loading="lazy"></a><figcaption>Real run: 15 created, jsmith2 collision handled</figcaption></figure>
+        <figure><a href="n-verify-groups.jpg"><img src="n-verify-groups.jpg" alt="Get-ADUser listing new users by department and title, and GRP-IT members" loading="lazy"></a><figcaption>Users sorted into departments; GRP-IT members</figcaption></figure>
+        <figure><a href="n-home-folders.jpg"><img src="n-home-folders.jpg" alt="List of home folders and icacls showing bbanner has Modify on his own folder" loading="lazy"></a><figcaption>15 home folders; bbanner has Modify on his only</figcaption></figure>
+        <figure><a href="n-bruce-signin.jpg"><img src="n-bruce-signin.jpg" alt="Windows 11 sign-in screen asking bbanner to set a new password" loading="lazy"></a><figcaption>First sign-in forces a new password</figcaption></figure>
+        <figure><a href="n-bruce-drives.jpg"><img src="n-bruce-drives.jpg" alt="File Explorer showing the H: home drive and S: LabShare, with the Control Panel restriction message" loading="lazy"></a><figcaption>H: and S: mapped; Control Panel blocked</figcaption></figure>
+        <figure><a href="n-rerun-skipped.jpg"><img src="n-rerun-skipped.jpg" alt="Second run skipping all 18 rows, then deleting the password handoff file" loading="lazy"></a><figcaption>Re-run: 18 skipped, no duplicates; handoff file deleted</figcaption></figure>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== OFFBOARDING ===================== -->
+  <section class="doc" id="offboarding" aria-labelledby="h-off">
+    <div class="tabs"><span class="tab">Remove-LabUser.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-off"><span class="fold"></span><span class="rg">#region</span> Phase 2: Offboarding</h2>
+      <p>When someone leaves, the account is locked down and kept, not deleted. Deleting loses the account's ID, its group history and its files, and can't be undone if HR made a mistake. For each username the script:</p>
+      <ol>
+        <li><b>Refuses</b> protected accounts: Administrator, krbtgt, Guest, any Domain Admins member, anything in Service Accounts</li>
+        <li>Logs the user's groups <em>before</em> removing them, so access could be restored</li>
+        <li>Disables the account and resets the password to a random 32-character value</li>
+        <li>Removes every group membership</li>
+        <li>Stamps the Description: <code>Disabled 2026-10-01 by Administrator - Ticket #125558</code></li>
+        <li>Moves it to <code>OU=Disabled Users</code>, where the Lab 1 policies no longer apply</li>
+        <li>Moves the home folder to an admin-only archive and clears the H: mapping</li>
+      </ol>
+      <h3><span class="cm">#</span>Testing the safety checks first</h3>
+      <p>The first dry run mixed a real user with two that should fail:</p>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\Remove-LabUser.ps1 -Identity slang,Administrator,tstark -Ticket TEST -WhatIf</span>
+<span class="gr">2026-10-01 15:15:09 [INFO] Run started by Administrator | Ticket #TEST | WhatIf: True</span>
+<span class="gr">2026-10-01 15:15:09 [INFO] slang (Scott Lang) | groups before: GRP-Finance, Lab Staff</span>
+What if: Performing the operation "Disable, reset password, remove from groups, move to Disabled Users, archive home folder" on target "Scott Lang (slang)".
+<span class="gr">2026-10-01 15:15:09 [INFO] WHATIF slang would be disabled, removed from: GRP-Finance, Lab Staff, moved to Disabled Users, home folder -&gt; C:\Shares\Archive\slang-2026-10-01</span>
+<span class="r">2026-10-01 15:15:09 [ERROR] REFUSED Administrator (Administrator): protected account (admin, built-in or service account)</span>
+<span class="y">2026-10-01 15:15:09 [WARN] SKIP tstark: no such user in AD</span>
+<span class="gr">2026-10-01 15:15:09 [INFO] Run finished | WhatIf: 1 | Refused: 1 | Skipped: 1</span>
+
+Username      Name          Status  Detail
+--------      ----          ------  ------
+slang         Scott Lang    WhatIf  Would be offboarded (groups: GRP-Finance, Lab Staff)
+Administrator Administrator Refused Protected account
+tstark                      Skipped User not found</pre>
+      <div class="tbl"><table>
+        <thead><tr><th>Input</th><th>Expected</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">slang</td><td>Preview only</td><td class="ok">WhatIf: lists GRP-Finance, Lab Staff</td></tr>
+          <tr><td class="mono">Administrator</td><td>Refuse</td><td class="bad">REFUSED: protected account</td></tr>
+          <tr><td class="mono">tstark</td><td>Skip (osTicket agent only, not in AD)</td><td class="warn">SKIP: no such user</td></tr>
+        </tbody>
+      </table></div>
+      <h3><span class="cm">#</span>Real run</h3>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\Remove-LabUser.ps1 -Identity slang -Ticket 1001</span>
+<span class="gr">2026-10-01 15:16:29 [INFO] Run started by Administrator | Ticket #1001 | WhatIf: False</span>
+<span class="gr">2026-10-01 15:16:29 [INFO] slang (Scott Lang) | groups before: GRP-Finance, Lab Staff</span>
+<span class="g">2026-10-01 15:16:29 [OK] OK   slang disabled and password reset</span>
+<span class="g">2026-10-01 15:16:29 [OK] OK   slang removed from 2 group(s)</span>
+<span class="g">2026-10-01 15:16:30 [OK] OK   slang moved to Disabled Users, description stamped</span>
+<span class="g">2026-10-01 15:16:30 [OK] OK   home folder archived to C:\Shares\Archive\slang-2026-10-01</span>
+<span class="gr">2026-10-01 15:16:30 [INFO] Run finished | Offboarded: 1</span>
+
+Username Name       Status     Detail
+-------- ----       ------     ------
+slang    Scott Lang Offboarded Removed from: GRP-Finance, Lab Staff; home -&gt; C:\Shares\Archive\slang-2026-10-01
+
+<span class="ps">PS C:\Scripts\Lab3&gt; Get-ADUser slang -Properties Description,MemberOf,HomeDirectory | Select Name,Enabled,Description,DistinguishedName,MemberOf,HomeDirectory</span>
+
+Name              : Scott Lang
+Enabled           : False
+Description       : Disabled 2026-10-01 by Administrator - Ticket #1001
+DistinguishedName : CN=Scott Lang,OU=Disabled Users,DC=emillab,DC=local
+MemberOf          : {}
+HomeDirectory     :</pre>
+      <p>Logs: <a href="log-04-offboard-dryrun.txt">dry run</a> &middot; <a href="log-05-offboard-slang.txt">Scott Lang</a> &middot; <a href="log-09-ticket-125558-run.txt">Wanda Maximoff (ticket #125558)</a></p>
+      <div class="shots">
+        <figure><a href="x-dryrun.jpg"><img src="x-dryrun.jpg" alt="Offboarding dry run: slang previewed, Administrator refused in red, tstark skipped in yellow" loading="lazy"></a><figcaption>Dry run: preview, refusal, skip</figcaption></figure>
+        <figure><a href="x-run.jpg"><img src="x-run.jpg" alt="Real offboarding run for slang with four green OK lines" loading="lazy"></a><figcaption>Real run: four steps, all OK</figcaption></figure>
+        <figure><a href="x-verify.jpg"><img src="x-verify.jpg" alt="Get-ADUser slang showing Enabled False, ticket description, Disabled Users OU, no groups, no home directory" loading="lazy"></a><figcaption>Enabled False, no groups, ticket stamped</figcaption></figure>
+        <figure><a href="x-archive.jpg"><img src="x-archive.jpg" alt="C:\Shares\Archive containing slang-2026-10-01" loading="lazy"></a><figcaption>Home folder archived, not deleted</figcaption></figure>
+        <figure><a href="x-aduc-disabled.jpg"><img src="x-aduc-disabled.jpg" alt="Active Directory Users and Computers showing Scott Lang disabled in the Disabled Users OU" loading="lazy"></a><figcaption>ADUC: Disabled Users OU</figcaption></figure>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== REPORTING ===================== -->
+  <section class="doc" id="reporting" aria-labelledby="h-rep">
+    <div class="tabs"><span class="tab">Get-LabUserReport.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-rep"><span class="fold"></span><span class="rg">#region</span> Phase 3: Account health report</h2>
+      <p>A read-only script that checks every account in the domain and answers the questions a help desk gets asked: who is locked out, who is disabled, which accounts have never been used, and whose password is a problem. It writes a CSV for filtering in Excel and an HTML report that can go to a manager or onto a ticket.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Check</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>Locked out</td><td><code>LockedOut</code> property</td></tr>
+          <tr><td>Disabled</td><td><code>Enabled -eq $false</code></td></tr>
+          <tr><td>Never signed in / inactive 30+ days</td><td><code>LastLogonDate</code> (enabled accounts only)</td></tr>
+          <tr><td>Must change password</td><td><code>PasswordLastSet</code> is empty (pwdLastSet = 0)</td></tr>
+          <tr><td>Password expired or expiring soon</td><td><code>msDS-UserPasswordExpiryTimeComputed</code>, converted from FileTime</td></tr>
+          <tr><td>Password never expires</td><td><code>PasswordNeverExpires</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="reports"><span class="cm">#</span>The reports it generated</h3>
+      <p>These are the actual HTML files the script wrote on DC01, unchanged. Each opens in a new tab.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Report</th><th>When</th><th>Locked</th><th>Disabled</th><th>What it shows</th></tr></thead>
+        <tbody>
+          <tr><td><a href="report-1-lockout-found.html" target="_blank" rel="noopener">1. Lockout found</a></td><td>15:37</td><td class="bad">1</td><td>1</td><td>Natasha Romanoff locked out after bad passwords on CLIENT01; Scott Lang disabled</td></tr>
+          <tr><td><a href="report-2-expiring-45-days.html" target="_blank" rel="noopener">2. Expiring in 45 days</a></td><td>15:40</td><td class="bad">1</td><td>1</td><td>Run with <code>-ExpiringDays 45</code>: 4 passwords inside the 42-day default policy window</td></tr>
+          <tr><td><a href="report-3-after-unlock.html" target="_blank" rel="noopener">3. After unlock</a></td><td>15:45</td><td class="ok">0</td><td>1</td><td>After <code>Unlock-ADAccount nromanoff</code>: lockout cleared</td></tr>
+          <tr><td><a href="report-4-final.html" target="_blank" rel="noopener">4. Final</a></td><td>16:41</td><td class="ok">0</td><td>2</td><td>After both tickets: 22 accounts, Scott and Wanda disabled (<a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/report-4-final.csv">CSV</a>)</td></tr>
+        </tbody>
+      </table></div>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\Get-LabUserReport.ps1 -Open</span>
+
+<span class="cy">User Account Report - 20 accounts checked</span>
+
+Check                                       Accounts
+-----                                       --------
+Locked out                                         1
+Disabled                                           1
+Never signed in                                   14
+Inactive 30+ days                                  0
+Must change password at next sign-in              13
+Password expired or expiring within 14 days        0
+Password never expires                             2
+
+<span class="y">Locked out:</span>
+
+Username  Name             LastSignIn OU
+--------  ----             ---------- --
+nromanoff Natasha Romanoff Never      OU=IT,OU=Lab Users,DC=emillab,DC=local
+
+<span class="y">Disabled:</span>
+
+Username Name       LastSignIn OU
+-------- ----       ---------- --
+slang    Scott Lang Never      OU=Disabled Users,DC=emillab,DC=local
+
+CSV:  C:\Scripts\Lab3\Reports\UserReport-20261001-153705.csv
+HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-153705.html</pre>
+
+      <h3><span class="cm">#</span>What the report found</h3>
+      <ul>
+        <li><b>Two accounts whose password never expires:</b> Administrator and <code>svc-osticket</code>. That's common for service accounts, and exactly what a report like this is meant to surface. The better fix is a group Managed Service Account, whose password Windows rotates automatically.</li>
+        <li><b>Lab 1 accounts have no Department.</b> <code>jdoe</code>, <code>jsmith</code> and <code>pparker</code> were made by hand and show blank. Accounts made by the script always have it filled in.</li>
+        <li><b>The numbers reconcile.</b> Between the first and final reports, Never signed in went 14 &rarr; 15: Stephen and Hope added, Wanda moved to Disabled. Must change password went 13 &rarr; 14 the same way.</li>
+      </ul>
+      <div class="note"><b>Why "inactive" uses 30 days:</b> <code>LastLogonDate</code> comes from <code>lastLogonTimestamp</code>, which AD only updates every 9 to 14 days by design. It's accurate for "inactive for a month," not for "signed in today."</div>
+      <div class="shots">
+        <figure><a href="r-lockout.jpg"><img src="r-lockout.jpg" alt="CLIENT01 sign-in screen: the referenced account is currently locked out" loading="lazy"></a><figcaption>Causing a lockout on CLIENT01</figcaption></figure>
+        <figure><a href="r-console.jpg"><img src="r-console.jpg" alt="Report console summary with nromanoff under Locked out and slang under Disabled" loading="lazy"></a><figcaption>Console summary finds the lockout</figcaption></figure>
+        <figure><a href="r-html-top.jpg"><img src="r-html-top.jpg" alt="HTML report summary table opened in Edge" loading="lazy"></a><figcaption>HTML report, summary</figcaption></figure>
+        <figure><a href="r-html-sections.jpg"><img src="r-html-sections.jpg" alt="HTML report sections for Locked out, Disabled, Never signed in" loading="lazy"></a><figcaption>One section per problem</figcaption></figure>
+        <figure><a href="r-expiring45.jpg"><img src="r-expiring45.jpg" alt="Report run with ExpiringDays 45 showing 4 expiring passwords" loading="lazy"></a><figcaption>-ExpiringDays 45</figcaption></figure>
+        <figure><a href="r-final.jpg"><img src="r-final.jpg" alt="Final report: 22 accounts, 0 locked out, 2 disabled" loading="lazy"></a><figcaption>Final: 22 accounts, 0 locked, 2 disabled</figcaption></figure>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== TICKETS ===================== -->
+  <section class="doc" id="tickets" aria-labelledby="h-tk">
+    <div class="tabs"><span class="tab">Invoke-TicketWorkflow.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-tk"><span class="fold"></span><span class="rg">#region</span> Phase 4: Running it from tickets</h2>
+      <p>In a real IT team, nobody runs an account script because they felt like it. HR sends a request, the request becomes a ticket, and the work is recorded on that ticket. Two help topics were added to the <a href="https://emilagui01.github.io/helpdesk-lab/">Lab 2</a> osTicket server for this:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Help topic</th><th>Department</th><th>Priority / SLA</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td>New Hire Request</td><td>Systems Administration</td><td>Normal / P3 (24 h)</td><td>Private / Internal</td></tr>
+          <tr><td>Employee Offboarding</td><td>Systems Administration</td><td>High / P2 (8 h)</td><td>Private / Internal</td></tr>
+        </tbody>
+      </table></div>
+      <p>Both are <b>Private</b>, so they don't appear on the customer portal. Any employee can report a printer problem, but only HR, through the help desk, should be able to ask for an account to be created or shut off. Offboarding is a higher priority than onboarding because a departed employee with working access is a security risk.</p>
+<pre class="tree" aria-label="Ticket workflow">
+<b>HR calls</b>  ──►  ticket opened, help topic sets dept + SLA  ──►  agent claims it
+                                                              │
+     ┌────────────────────────────────────────────────────────┘
+     ▼
+ script <u>-WhatIf</u>  ──►  script <u>-Ticket &lt;number&gt;</u>  ──►  AD Description stamped
+                                                              │
+     ┌────────────────────────────────────────────────────────┘
+     ▼
+ internal note (log)  ──►  reply to requester  ──►  <b>Resolved</b>
+</pre>
+      <div class="tbl"><table>
+        <thead><tr><th>Ticket</th><th>Request</th><th>Run</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">#520879</td><td>Steve Rogers (HR): new hires Stephen Strange (IT) and Hope Van Dyne (Finance)</td><td class="mono">New-LabUsers.ps1 -CsvPath .\NewHires-520879.csv -Ticket 520879</td><td class="ok">2 created, resolved</td></tr>
+          <tr><td class="mono">#125558</td><td>Steve Rogers (HR): Wanda Maximoff's last day</td><td class="mono">Remove-LabUser.ps1 -Identity wmaximoff -Ticket 125558</td><td class="ok">Offboarded, resolved</td></tr>
+        </tbody>
+      </table></div>
+      <p>The requester, Steve Rogers, is himself an HR account created in Phase 1. "Van Dyne" became <code>hvandyne</code>, because the username builder strips the space. Afterwards, AD can be searched by ticket number:</p>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; Get-ADUser -Filter "Description -like '*520879*'" -Properties Description | Select Name,SamAccountName,Description</span>
+
+Name            SamAccountName Description
+----            -------------- -----------
+Stephen Strange sstrange       Created 2026-10-01 by Administrator - Ticket #520879
+Hope Van Dyne   hvandyne       Created 2026-10-01 by Administrator - Ticket #520879
+
+<span class="ps">PS C:\Scripts\Lab3&gt; Get-ADUser -Filter "Description -like '*125558*'" -Properties Description | Select Name,Enabled,DistinguishedName,Description</span>
+
+Name           Enabled DistinguishedName                                   Description
+----           ------- -----------------                                   -----------
+Wanda Maximoff   False CN=Wanda Maximoff,OU=Disabled Users,DC=emillab,DC=local Disabled 2026-10-01 by Administrator - Ticket #125558</pre>
+      <div class="shots">
+        <figure><a href="t-topics-list.jpg"><img src="t-topics-list.jpg" alt="osTicket help topics list including New Hire Request and Employee Offboarding as Private" loading="lazy"></a><figcaption>Two new Private help topics</figcaption></figure>
+        <figure><a href="t-topic-p3.jpg"><img src="t-topic-p3.jpg" alt="New Hire Request routed to Systems Administration with P3 SLA" loading="lazy"></a><figcaption>New Hire Request: Systems Administration, P3</figcaption></figure>
+        <figure><a href="t-topic-p2.jpg"><img src="t-topic-p2.jpg" alt="Employee Offboarding routed to Systems Administration with High priority and P2 SLA" loading="lazy"></a><figcaption>Employee Offboarding: High, P2</figcaption></figure>
+        <figure><a href="t-520879-open.jpg"><img src="t-520879-open.jpg" alt="Ticket 520879 opened by phone for Steve Rogers, New Hire Request, P3, due next day" loading="lazy"></a><figcaption>#520879 opened, routed automatically</figcaption></figure>
+        <figure><a href="t-520879-dryrun.jpg"><img src="t-520879-dryrun.jpg" alt="New-LabUsers dry run with Ticket 520879, two accounts would be created" loading="lazy"></a><figcaption>Dry run with -Ticket 520879</figcaption></figure>
+        <figure><a href="t-520879-run.jpg"><img src="t-520879-run.jpg" alt="Real run creating sstrange and hvandyne" loading="lazy"></a><figcaption>sstrange and hvandyne created</figcaption></figure>
+        <figure><a href="t-520879-lookup.jpg"><img src="t-520879-lookup.jpg" alt="Get-ADUser filtered by Description containing 520879 returns both new users" loading="lazy"></a><figcaption>Find accounts by ticket number</figcaption></figure>
+        <figure><a href="t-520879-resolved.jpg"><img src="t-520879-resolved.jpg" alt="Reply to Steve Rogers and ticket closed with status Resolved" loading="lazy"></a><figcaption>Reply to HR, resolved</figcaption></figure>
+        <figure><a href="t-125558-open.jpg"><img src="t-125558-open.jpg" alt="Ticket 125558 Employee Offboarding, High priority, P2 SLA, assigned" loading="lazy"></a><figcaption>#125558: P2, due in 8 hours</figcaption></figure>
+        <figure><a href="t-125558-run.jpg"><img src="t-125558-run.jpg" alt="Remove-LabUser dry run and real run for wmaximoff with Ticket 125558" loading="lazy"></a><figcaption>Offboarding wmaximoff against #125558</figcaption></figure>
+        <figure><a href="t-125558-lookup.jpg"><img src="t-125558-lookup.jpg" alt="Get-ADUser by ticket number shows Wanda Maximoff disabled in Disabled Users" loading="lazy"></a><figcaption>Disabled, in Disabled Users, ticket stamped</figcaption></figure>
+        <figure><a href="t-125558-resolved.jpg"><img src="t-125558-resolved.jpg" alt="Ticket 125558 thread with reply to HR and closed as Resolved" loading="lazy"></a><figcaption>Reply to HR, resolved</figcaption></figure>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== SOURCE ===================== -->
+  <section class="doc" id="source" aria-labelledby="h-src">
+    <div class="tabs"><span class="tab">Show-Source.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-src"><span class="fold"></span><span class="rg">#region</span> The scripts</h2>
+      <p>The full source, exactly as run on DC01. Pick a tab to switch files, the way ISE does. Each tab also shows that script's real output underneath. The files are also in the <a href="https://github.com/emilagui01/powershell-automation-lab">GitHub repo</a>.</p>
+      <div class="viewer" id="viewer">
+        <div class="tabs" role="tablist" aria-label="Scripts">
+          <button class="tab" role="tab" id="tab-new" aria-controls="panel-new" aria-selected="true">New-LabUsers.ps1</button>
+          <button class="tab" role="tab" id="tab-rem" aria-controls="panel-rem" aria-selected="false">Remove-LabUser.ps1</button>
+          <button class="tab" role="tab" id="tab-rep" aria-controls="panel-rep" aria-selected="false">Get-LabUserReport.ps1</button>
+        </div>
+        <div class="panel" role="tabpanel" id="panel-new" aria-labelledby="tab-new">
+<pre class="code"><span class="ln">1</span><span class="c">&lt;#</span>
+<span class="ln">2</span><span class="c">.SYNOPSIS</span>
+<span class="ln">3</span><span class="c">    Bulk-creates Active Directory user accounts from a CSV of new hires.</span>
+<span class="ln">4</span><span class="c"></span>
+<span class="ln">5</span><span class="c">.DESCRIPTION</span>
+<span class="ln">6</span><span class="c">    For each row in the CSV, the script:</span>
+<span class="ln">7</span><span class="c">      1. Validates the row (name present, department exists)</span>
+<span class="ln">8</span><span class="c">      2. Skips anyone who already has an account (safe to re-run)</span>
+<span class="ln">9</span><span class="c">      3. Generates a unique username (first initial + last name, with a number if taken)</span>
+<span class="ln">10</span><span class="c">      4. Creates the account in the department OU with a random temporary password</span>
+<span class="ln">11</span><span class="c">         and "must change password at next logon"</span>
+<span class="ln">12</span><span class="c">      5. Adds the user to their department group and to Lab Staff</span>
+<span class="ln">13</span><span class="c">      6. Creates a personal home folder on \\DC01\Home$ that only they (and admins) can open</span>
+<span class="ln">14</span><span class="c">      7. Logs every action and exports a results CSV</span>
+<span class="ln">15</span><span class="c"></span>
+<span class="ln">16</span><span class="c">    Supports -WhatIf to preview every change without making it.</span>
+<span class="ln">17</span><span class="c"></span>
+<span class="ln">18</span><span class="c">.PARAMETER CsvPath</span>
+<span class="ln">19</span><span class="c">    CSV with columns: FirstName, LastName, Department, Title</span>
+<span class="ln">20</span><span class="c"></span>
+<span class="ln">21</span><span class="c">.EXAMPLE</span>
+<span class="ln">22</span><span class="c">    .\New-LabUsers.ps1 -CsvPath .\NewHires.csv -WhatIf</span>
+<span class="ln">23</span><span class="c">    Dry run: shows what would be created.</span>
+<span class="ln">24</span><span class="c"></span>
+<span class="ln">25</span><span class="c">.EXAMPLE</span>
+<span class="ln">26</span><span class="c">    .\New-LabUsers.ps1 -CsvPath .\NewHires.csv</span>
+<span class="ln">27</span><span class="c">    Creates the accounts.</span>
+<span class="ln">28</span><span class="c"></span>
+<span class="ln">29</span><span class="c">.EXAMPLE</span>
+<span class="ln">30</span><span class="c">    .\New-LabUsers.ps1 -CsvPath .\NewHires-520879.csv -Ticket 520879</span>
+<span class="ln">31</span><span class="c">    Creates the accounts and stamps the ticket number on each one's Description.</span>
+<span class="ln">32</span><span class="c"></span>
+<span class="ln">33</span><span class="c">.NOTES</span>
+<span class="ln">34</span><span class="c">    Author: Emil Aguirre Herrera</span>
+<span class="ln">35</span><span class="c">    Lab:    Home Lab 3 - PowerShell Automation (emillab.local)</span>
+<span class="ln">36</span><span class="c">#&gt;</span>
+<span class="ln">37</span>[<span class="a">CmdletBinding</span>(SupportsShouldProcess)]
+<span class="ln">38</span><span class="kw">param</span>(
+<span class="ln">39</span>    [<span class="a">Parameter</span>(Mandatory)]
+<span class="ln">40</span>    [<span class="a">ValidateScript</span>({ <span class="k-cmd">Test-Path</span> <span class="v">$_</span> <span class="p">-PathType</span> Leaf })]
+<span class="ln">41</span>    <span class="t">[string]</span><span class="v">$CsvPath</span>,
+<span class="ln">42</span>
+<span class="ln">43</span>    <span class="t">[string]</span><span class="v">$Ticket</span>,                                   <span class="c"># help desk ticket number, stamped on each account</span>
+<span class="ln">44</span>
+<span class="ln">45</span>    <span class="t">[string]</span><span class="v">$LogDir</span>   <span class="o">=</span> <span class="s">"C:\Scripts\Lab3\Logs"</span>,
+<span class="ln">46</span>    <span class="t">[string]</span><span class="v">$Domain</span>    <span class="o">=</span> <span class="s">"emillab.local"</span>,
+<span class="ln">47</span>    <span class="t">[string]</span><span class="v">$BaseOU</span>    <span class="o">=</span> <span class="s">"OU=Lab Users,DC=emillab,DC=local"</span>,
+<span class="ln">48</span>    <span class="t">[string]</span><span class="v">$HomeRoot</span>  <span class="o">=</span> <span class="s">"\\DC01\Home$"</span>,
+<span class="ln">49</span>    <span class="t">[string]</span><span class="v">$HomeDrive</span> <span class="o">=</span> <span class="s">"H:"</span>
+<span class="ln">50</span>)
+<span class="ln">51</span>
+<span class="ln">52</span><span class="k-cmd">Import-Module</span> ActiveDirectory <span class="p">-ErrorAction</span> Stop
+<span class="ln">53</span>
+<span class="ln">54</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">55</span><span class="c"># Settings</span>
+<span class="ln">56</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">57</span><span class="v">$Departments</span> <span class="o">=</span> @(<span class="s">"IT"</span>, <span class="s">"HR"</span>, <span class="s">"Finance"</span>, <span class="s">"Marketing"</span>)   <span class="c"># must match the OUs and GRP- groups</span>
+<span class="ln">58</span><span class="v">$StaffGroup</span>  <span class="o">=</span> <span class="s">"Lab Staff"</span>                             <span class="c"># gives S: drive and Remote Desktop access (Lab 1 GPOs)</span>
+<span class="ln">59</span><span class="v">$NetBios</span>     <span class="o">=</span> (<span class="k-cmd">Get-ADDomain</span>).NetBIOSName              <span class="c"># EMILLAB</span>
+<span class="ln">60</span><span class="v">$Stamp</span>       <span class="o">=</span> <span class="k-cmd">Get-Date</span> <span class="p">-Format</span> <span class="s">"yyyyMMdd-HHmmss"</span>
+<span class="ln">61</span><span class="v">$LogFile</span>     <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$LogDir</span> <span class="s">"New-LabUsers-<span class="v">$Stamp</span>.log"</span>
+<span class="ln">62</span><span class="v">$ResultFile</span>  <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$LogDir</span> <span class="s">"New-LabUsers-<span class="v">$Stamp</span>-results.csv"</span>
+<span class="ln">63</span><span class="v">$HandoffFile</span> <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$LogDir</span> <span class="s">"New-LabUsers-<span class="v">$Stamp</span>-HANDOFF.csv"</span>
+<span class="ln">64</span>
+<span class="ln">65</span><span class="v">$Results</span>  <span class="o">=</span> <span class="k-cmd">New-Object</span> System.Collections.Generic.List<span class="t">[object]</span>
+<span class="ln">66</span><span class="v">$Handoff</span>  <span class="o">=</span> <span class="k-cmd">New-Object</span> System.Collections.Generic.List<span class="t">[object]</span>
+<span class="ln">67</span><span class="v">$Reserved</span> <span class="o">=</span> <span class="k-cmd">New-Object</span> System.Collections.Generic.HashSet<span class="t">[string]</span>   <span class="c"># usernames claimed during this run</span>
+<span class="ln">68</span>
+<span class="ln">69</span><span class="c"># Logging must happen even during -WhatIf, so these calls use -WhatIf:$false</span>
+<span class="ln">70</span><span class="kw">if</span> (<span class="o">-not</span> (<span class="k-cmd">Test-Path</span> <span class="v">$LogDir</span>)) { <span class="k-cmd">New-Item</span> <span class="p">-Path</span> <span class="v">$LogDir</span> <span class="p">-ItemType</span> Directory <span class="p">-WhatIf:</span><span class="v">$false</span> <span class="o">|</span> <span class="k-cmd">Out-Null</span> }
+<span class="ln">71</span>
+<span class="ln">72</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">73</span><span class="c"># Helper functions</span>
+<span class="ln">74</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">75</span><span class="kw">function</span> <span class="k-cmd">Write-Log</span> {
+<span class="ln">76</span>    <span class="kw">param</span>(
+<span class="ln">77</span>        [<span class="a">Parameter</span>(Mandatory)]<span class="t">[string]</span><span class="v">$Message</span>,
+<span class="ln">78</span>        [<span class="a">ValidateSet</span>(<span class="s">"INFO"</span>, <span class="s">"OK"</span>, <span class="s">"WARN"</span>, <span class="s">"ERROR"</span>)]<span class="t">[string]</span><span class="v">$Level</span> <span class="o">=</span> <span class="s">"INFO"</span>
+<span class="ln">79</span>    )
+<span class="ln">80</span>    <span class="v">$line</span> <span class="o">=</span> <span class="s">"{0} [{1}] {2}"</span> <span class="o">-f</span> (<span class="k-cmd">Get-Date</span> <span class="p">-Format</span> <span class="s">"yyyy-MM-dd HH:mm:ss"</span>), <span class="v">$Level</span>, <span class="v">$Message</span>
+<span class="ln">81</span>    <span class="k-cmd">Add-Content</span> <span class="p">-Path</span> <span class="v">$LogFile</span> <span class="p">-Value</span> <span class="v">$line</span> <span class="p">-WhatIf:</span><span class="v">$false</span>
+<span class="ln">82</span>    <span class="v">$color</span> <span class="o">=</span> @{ INFO <span class="o">=</span> <span class="s">"Gray"</span>; OK <span class="o">=</span> <span class="s">"Green"</span>; WARN <span class="o">=</span> <span class="s">"Yellow"</span>; ERROR <span class="o">=</span> <span class="s">"Red"</span> }[<span class="v">$Level</span>]
+<span class="ln">83</span>    <span class="k-cmd">Write-Host</span> <span class="v">$line</span> <span class="p">-ForegroundColor</span> <span class="v">$color</span>
+<span class="ln">84</span>}
+<span class="ln">85</span>
+<span class="ln">86</span><span class="kw">function</span> <span class="k-cmd">Add-Result</span> {
+<span class="ln">87</span>    <span class="kw">param</span>(<span class="v">$Name</span>, <span class="v">$Username</span>, <span class="v">$Department</span>, <span class="v">$Status</span>, <span class="v">$Detail</span>)
+<span class="ln">88</span>    <span class="v">$Results</span>.Add(<span class="t">[pscustomobject]</span>@{
+<span class="ln">89</span>        Name       <span class="o">=</span> <span class="v">$Name</span>
+<span class="ln">90</span>        Username   <span class="o">=</span> <span class="v">$Username</span>
+<span class="ln">91</span>        Department <span class="o">=</span> <span class="v">$Department</span>
+<span class="ln">92</span>        Status     <span class="o">=</span> <span class="v">$Status</span>
+<span class="ln">93</span>        Detail     <span class="o">=</span> <span class="v">$Detail</span>
+<span class="ln">94</span>    })
+<span class="ln">95</span>}
+<span class="ln">96</span>
+<span class="ln">97</span><span class="kw">function</span> <span class="k-cmd">Get-UniqueSamAccountName</span> {
+<span class="ln">98</span>    <span class="c"># First initial + last name, lowercase, letters and numbers only, max 20 characters.</span>
+<span class="ln">99</span>    <span class="c"># If taken (in AD or earlier in this run), append 2, 3, 4...</span>
+<span class="ln">100</span>    <span class="kw">param</span>(<span class="t">[string]</span><span class="v">$First</span>, <span class="t">[string]</span><span class="v">$Last</span>)
+<span class="ln">101</span>    <span class="v">$base</span> <span class="o">=</span> ((<span class="v">$First</span>.Substring(<span class="n">0</span>, <span class="n">1</span>) <span class="o">+</span> <span class="v">$Last</span>).ToLower()) <span class="o">-replace</span> <span class="s">'[^a-z0-9]'</span>, <span class="s">''</span>
+<span class="ln">102</span>    <span class="kw">if</span> (<span class="v">$base</span>.Length <span class="o">-gt</span> <span class="n">18</span>) { <span class="v">$base</span> <span class="o">=</span> <span class="v">$base</span>.Substring(<span class="n">0</span>, <span class="n">18</span>) }
+<span class="ln">103</span>
+<span class="ln">104</span>    <span class="v">$sam</span> <span class="o">=</span> <span class="v">$base</span>
+<span class="ln">105</span>    <span class="v">$n</span>   <span class="o">=</span> <span class="n">1</span>
+<span class="ln">106</span>    <span class="kw">while</span> (<span class="v">$Reserved</span>.Contains(<span class="v">$sam</span>) <span class="o">-or</span> (<span class="k-cmd">Get-ADUser</span> <span class="p">-Filter</span> <span class="s">"SamAccountName -eq '<span class="v">$sam</span>'"</span>)) {
+<span class="ln">107</span>        <span class="v">$n</span><span class="o">++</span>
+<span class="ln">108</span>        <span class="v">$sam</span> <span class="o">=</span> <span class="s">"<span class="v">$base</span><span class="v">$n</span>"</span>
+<span class="ln">109</span>    }
+<span class="ln">110</span>    <span class="t">[void]</span><span class="v">$Reserved</span>.Add(<span class="v">$sam</span>)
+<span class="ln">111</span>    <span class="kw">return</span> <span class="v">$sam</span>
+<span class="ln">112</span>}
+<span class="ln">113</span>
+<span class="ln">114</span><span class="kw">function</span> <span class="k-cmd">New-TempPassword</span> {
+<span class="ln">115</span>    <span class="c"># 12 characters with at least one upper, lower, digit and symbol, so it always meets</span>
+<span class="ln">116</span>    <span class="c"># domain complexity. (If New-ADUser's password is rejected, the account is still</span>
+<span class="ln">117</span>    <span class="c"># created but left disabled - see Lab 1, troubleshooting.)</span>
+<span class="ln">118</span>    <span class="c"># Ambiguous characters (0/O, 1/l/I) are left out so it can be read aloud.</span>
+<span class="ln">119</span>    <span class="v">$upper</span> <span class="o">=</span> <span class="s">"ABCDEFGHJKLMNPQRSTUVWXYZ"</span>
+<span class="ln">120</span>    <span class="v">$lower</span> <span class="o">=</span> <span class="s">"abcdefghijkmnopqrstuvwxyz"</span>
+<span class="ln">121</span>    <span class="v">$digit</span> <span class="o">=</span> <span class="s">"23456789"</span>
+<span class="ln">122</span>    <span class="v">$sym</span>   <span class="o">=</span> <span class="s">"!@#$%*?"</span>
+<span class="ln">123</span>    <span class="v">$all</span>   <span class="o">=</span> <span class="v">$upper</span> <span class="o">+</span> <span class="v">$lower</span> <span class="o">+</span> <span class="v">$digit</span> <span class="o">+</span> <span class="v">$sym</span>
+<span class="ln">124</span>
+<span class="ln">125</span>    <span class="v">$chars</span> <span class="o">=</span> @(
+<span class="ln">126</span>        <span class="v">$upper</span>[(<span class="k-cmd">Get-Random</span> <span class="p">-Maximum</span> <span class="v">$upper</span>.Length)]
+<span class="ln">127</span>        <span class="v">$lower</span>[(<span class="k-cmd">Get-Random</span> <span class="p">-Maximum</span> <span class="v">$lower</span>.Length)]
+<span class="ln">128</span>        <span class="v">$digit</span>[(<span class="k-cmd">Get-Random</span> <span class="p">-Maximum</span> <span class="v">$digit</span>.Length)]
+<span class="ln">129</span>        <span class="v">$sym</span>[(<span class="k-cmd">Get-Random</span> <span class="p">-Maximum</span> <span class="v">$sym</span>.Length)]
+<span class="ln">130</span>    )
+<span class="ln">131</span>    <span class="v">$chars</span> <span class="o">+=</span> <span class="n">1</span>..<span class="n">8</span> <span class="o">|</span> <span class="k-cmd">ForEach-Object</span> { <span class="v">$all</span>[(<span class="k-cmd">Get-Random</span> <span class="p">-Maximum</span> <span class="v">$all</span>.Length)] }
+<span class="ln">132</span>    <span class="kw">return</span> <span class="o">-join</span> (<span class="v">$chars</span> <span class="o">|</span> <span class="k-cmd">Sort-Object</span> { <span class="k-cmd">Get-Random</span> })
+<span class="ln">133</span>}
+<span class="ln">134</span>
+<span class="ln">135</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">136</span><span class="c"># Main</span>
+<span class="ln">137</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">138</span><span class="v">$rows</span> <span class="o">=</span> @(<span class="k-cmd">Import-Csv</span> <span class="p">-Path</span> <span class="v">$CsvPath</span>)
+<span class="ln">139</span><span class="k-cmd">Write-Log</span> <span class="s">"Run started by <span class="v">$env:USERNAME</span> on <span class="v">$env:COMPUTERNAME</span> | $(<span class="v">$rows</span>.Count) rows from <span class="v">$CsvPath</span> | Ticket: $(if (<span class="v">$Ticket</span>) { "</span><span class="c">#$Ticket" } else { 'none' }) | WhatIf: $WhatIfPreference"</span>
+<span class="ln">140</span>
+<span class="ln">141</span><span class="kw">foreach</span> (<span class="v">$row</span> <span class="kw">in</span> <span class="v">$rows</span>) {
+<span class="ln">142</span>    <span class="v">$first</span>   <span class="o">=</span> <span class="s">"$(<span class="v">$row</span>.FirstName)"</span>.Trim()
+<span class="ln">143</span>    <span class="v">$last</span>    <span class="o">=</span> <span class="s">"$(<span class="v">$row</span>.LastName)"</span>.Trim()
+<span class="ln">144</span>    <span class="v">$dept</span>    <span class="o">=</span> <span class="s">"$(<span class="v">$row</span>.Department)"</span>.Trim()
+<span class="ln">145</span>    <span class="v">$title</span>   <span class="o">=</span> <span class="s">"$(<span class="v">$row</span>.Title)"</span>.Trim()
+<span class="ln">146</span>    <span class="v">$display</span> <span class="o">=</span> <span class="s">"<span class="v">$first</span> <span class="v">$last</span>"</span>
+<span class="ln">147</span>
+<span class="ln">148</span>    <span class="c"># --- Validate -----------------------------------------------------------</span>
+<span class="ln">149</span>    <span class="kw">if</span> (<span class="o">-not</span> <span class="v">$first</span> <span class="o">-or</span> <span class="o">-not</span> <span class="v">$last</span>) {
+<span class="ln">150</span>        <span class="k-cmd">Write-Log</span> <span class="s">"SKIP '<span class="v">$display</span>': missing first or last name"</span> WARN
+<span class="ln">151</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="s">""</span> <span class="v">$dept</span> <span class="s">"Skipped"</span> <span class="s">"Missing first or last name"</span>
+<span class="ln">152</span>        <span class="kw">continue</span>
+<span class="ln">153</span>    }
+<span class="ln">154</span>    <span class="kw">if</span> (<span class="v">$dept</span> <span class="o">-notin</span> <span class="v">$Departments</span>) {
+<span class="ln">155</span>        <span class="k-cmd">Write-Log</span> <span class="s">"SKIP <span class="v">$display</span>`: unknown department '<span class="v">$dept</span>' (valid: $(<span class="v">$Departments</span> -join ', '))"</span> WARN
+<span class="ln">156</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="s">""</span> <span class="v">$dept</span> <span class="s">"Skipped"</span> <span class="s">"Unknown department '<span class="v">$dept</span>'"</span>
+<span class="ln">157</span>        <span class="kw">continue</span>
+<span class="ln">158</span>    }
+<span class="ln">159</span>
+<span class="ln">160</span>    <span class="c"># --- Already has an account? (makes the script safe to run twice) -------</span>
+<span class="ln">161</span>    <span class="c"># Same name = probably the same person. Skip and flag for a human</span>
+<span class="ln">162</span>    <span class="c"># to review instead of creating a duplicate account.</span>
+<span class="ln">163</span>    <span class="v">$f</span> <span class="o">=</span> <span class="v">$first</span> <span class="o">-replace</span> <span class="s">"'"</span>, <span class="s">"''"</span>
+<span class="ln">164</span>    <span class="v">$l</span> <span class="o">=</span> <span class="v">$last</span>  <span class="o">-replace</span> <span class="s">"'"</span>, <span class="s">"''"</span>
+<span class="ln">165</span>    <span class="v">$n</span> <span class="o">=</span> <span class="v">$display</span> <span class="o">-replace</span> <span class="s">"'"</span>, <span class="s">"''"</span>
+<span class="ln">166</span>    <span class="c"># Checks Name too: accounts made by hand in Lab 1 have a Name but no GivenName/Surname</span>
+<span class="ln">167</span>    <span class="v">$existing</span> <span class="o">=</span> @(<span class="k-cmd">Get-ADUser</span> <span class="p">-Filter</span> <span class="s">"(GivenName -eq '<span class="v">$f</span>' -and Surname -eq '<span class="v">$l</span>') -or Name -eq '<span class="v">$n</span>'"</span>)
+<span class="ln">168</span>    <span class="kw">if</span> (<span class="v">$existing</span>.Count <span class="o">-gt</span> <span class="n">0</span>) {
+<span class="ln">169</span>        <span class="v">$who</span> <span class="o">=</span> (<span class="v">$existing</span> <span class="o">|</span> <span class="k-cmd">ForEach-Object</span> { <span class="v">$_</span>.SamAccountName }) <span class="o">-join</span> <span class="s">", "</span>
+<span class="ln">170</span>        <span class="k-cmd">Write-Log</span> <span class="s">"SKIP <span class="v">$display</span>`: account already exists (<span class="v">$who</span>) - review manually"</span> WARN
+<span class="ln">171</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="v">$who</span> <span class="v">$dept</span> <span class="s">"Skipped"</span> <span class="s">"Account already exists - review manually"</span>
+<span class="ln">172</span>        <span class="kw">continue</span>
+<span class="ln">173</span>    }
+<span class="ln">174</span>
+<span class="ln">175</span>    <span class="c"># --- Build the account details ------------------------------------------</span>
+<span class="ln">176</span>    <span class="v">$sam</span>     <span class="o">=</span> <span class="k-cmd">Get-UniqueSamAccountName</span> <span class="p">-First</span> <span class="v">$first</span> <span class="p">-Last</span> <span class="v">$last</span>
+<span class="ln">177</span>    <span class="v">$ou</span>      <span class="o">=</span> <span class="s">"OU=<span class="v">$dept</span>,<span class="v">$BaseOU</span>"</span>
+<span class="ln">178</span>    <span class="v">$group</span>   <span class="o">=</span> <span class="s">"GRP-<span class="v">$dept</span>"</span>
+<span class="ln">179</span>    <span class="v">$homeDir</span> <span class="o">=</span> <span class="s">"<span class="v">$HomeRoot</span>\<span class="v">$sam</span>"</span>
+<span class="ln">180</span>    <span class="v">$note</span>    <span class="o">=</span> <span class="kw">if</span> (<span class="v">$sam</span> <span class="o">-ne</span> (((<span class="v">$first</span>.Substring(<span class="n">0</span>, <span class="n">1</span>) <span class="o">+</span> <span class="v">$last</span>).ToLower()) <span class="o">-replace</span> <span class="s">'[^a-z0-9]'</span>, <span class="s">''</span>)) { <span class="s">" (base name taken)"</span> } <span class="kw">else</span> { <span class="s">""</span> }
+<span class="ln">181</span>
+<span class="ln">182</span>    <span class="kw">if</span> (<span class="o">-not</span> <span class="v">$PSCmdlet</span>.ShouldProcess(<span class="s">"<span class="v">$display</span> -&gt; <span class="v">$sam</span> in <span class="v">$ou</span>"</span>, <span class="s">"Create user, add to <span class="v">$group</span> and <span class="v">$StaffGroup</span>, create <span class="v">$homeDir</span>"</span>)) {
+<span class="ln">183</span>        <span class="k-cmd">Write-Log</span> <span class="s">"WHATIF <span class="v">$display</span> -&gt; <span class="v">$sam</span><span class="v">$note</span> | OU=<span class="v">$dept</span> | groups: <span class="v">$group</span>, <span class="v">$StaffGroup</span> | home: <span class="v">$homeDir</span>"</span>
+<span class="ln">184</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="v">$sam</span> <span class="v">$dept</span> <span class="s">"WhatIf"</span> <span class="s">"Would be created<span class="v">$note</span>"</span>
+<span class="ln">185</span>        <span class="kw">continue</span>
+<span class="ln">186</span>    }
+<span class="ln">187</span>
+<span class="ln">188</span>    <span class="c"># --- Create ---------------------------------------------------------------</span>
+<span class="ln">189</span>    <span class="kw">try</span> {
+<span class="ln">190</span>        <span class="v">$password</span> <span class="o">=</span> <span class="k-cmd">New-TempPassword</span>
+<span class="ln">191</span>        <span class="v">$userParams</span> <span class="o">=</span> @{
+<span class="ln">192</span>            Name                  <span class="o">=</span> <span class="v">$display</span>
+<span class="ln">193</span>            GivenName             <span class="o">=</span> <span class="v">$first</span>
+<span class="ln">194</span>            Surname               <span class="o">=</span> <span class="v">$last</span>
+<span class="ln">195</span>            DisplayName           <span class="o">=</span> <span class="v">$display</span>
+<span class="ln">196</span>            SamAccountName        <span class="o">=</span> <span class="v">$sam</span>
+<span class="ln">197</span>            UserPrincipalName     <span class="o">=</span> <span class="s">"<span class="v">$sam</span>@<span class="v">$Domain</span>"</span>
+<span class="ln">198</span>            EmailAddress          <span class="o">=</span> <span class="s">"<span class="v">$sam</span>@<span class="v">$Domain</span>"</span>
+<span class="ln">199</span>            Title                 <span class="o">=</span> <span class="v">$title</span>
+<span class="ln">200</span>            Department            <span class="o">=</span> <span class="v">$dept</span>
+<span class="ln">201</span>            Path                  <span class="o">=</span> <span class="v">$ou</span>
+<span class="ln">202</span>            AccountPassword       <span class="o">=</span> (<span class="k-cmd">ConvertTo-SecureString</span> <span class="v">$password</span> <span class="p">-AsPlainText</span> <span class="p">-Force</span>)
+<span class="ln">203</span>            ChangePasswordAtLogon <span class="o">=</span> <span class="v">$true</span>
+<span class="ln">204</span>            Enabled               <span class="o">=</span> <span class="v">$true</span>
+<span class="ln">205</span>            HomeDirectory         <span class="o">=</span> <span class="v">$homeDir</span>
+<span class="ln">206</span>            HomeDrive             <span class="o">=</span> <span class="v">$HomeDrive</span>
+<span class="ln">207</span>            ErrorAction           <span class="o">=</span> <span class="s">"Stop"</span>
+<span class="ln">208</span>        }
+<span class="ln">209</span>        <span class="kw">if</span> (<span class="v">$Ticket</span>) { <span class="v">$userParams</span>.Description <span class="o">=</span> <span class="s">"Created $(Get-Date -Format 'yyyy-MM-dd') by <span class="v">$env:USERNAME</span> - Ticket #<span class="v">$Ticket</span>"</span> }
+<span class="ln">210</span>        <span class="k-cmd">New-ADUser</span> @userParams
+<span class="ln">211</span>        <span class="k-cmd">Write-Log</span> <span class="s">"OK   created <span class="v">$display</span> -&gt; <span class="v">$sam</span><span class="v">$note</span> in OU=<span class="v">$dept</span>"</span> OK
+<span class="ln">212</span>
+<span class="ln">213</span>        <span class="k-cmd">Add-ADGroupMember</span> <span class="p">-Identity</span> <span class="v">$group</span>      <span class="p">-Members</span> <span class="v">$sam</span> <span class="p">-ErrorAction</span> Stop
+<span class="ln">214</span>        <span class="k-cmd">Add-ADGroupMember</span> <span class="p">-Identity</span> <span class="v">$StaffGroup</span> <span class="p">-Members</span> <span class="v">$sam</span> <span class="p">-ErrorAction</span> Stop
+<span class="ln">215</span>        <span class="k-cmd">Write-Log</span> <span class="s">"OK   <span class="v">$sam</span> added to <span class="v">$group</span>, <span class="v">$StaffGroup</span>"</span> OK
+<span class="ln">216</span>
+<span class="ln">217</span>        <span class="k-cmd">New-Item</span> <span class="p">-Path</span> <span class="v">$homeDir</span> <span class="p">-ItemType</span> Directory <span class="p">-Force</span> <span class="p">-ErrorAction</span> Stop <span class="o">|</span> <span class="k-cmd">Out-Null</span>
+<span class="ln">218</span>        <span class="v">$null</span> <span class="o">=</span> icacls <span class="v">$homeDir</span> <span class="o">/</span>grant <span class="s">"<span class="v">$NetBios</span>\<span class="v">${sam}</span>:(OI)(CI)M"</span>
+<span class="ln">219</span>        <span class="kw">if</span> (<span class="v">$LASTEXITCODE</span> <span class="o">-ne</span> <span class="n">0</span>) { <span class="kw">throw</span> <span class="s">"icacls failed to grant <span class="v">$sam</span> Modify on <span class="v">$homeDir</span>"</span> }
+<span class="ln">220</span>        <span class="k-cmd">Write-Log</span> <span class="s">"OK   home folder <span class="v">$homeDir</span> (Modify for <span class="v">$sam</span> only)"</span> OK
+<span class="ln">221</span>
+<span class="ln">222</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="v">$sam</span> <span class="v">$dept</span> <span class="s">"Created"</span> <span class="s">"OU=<span class="v">$dept</span>; <span class="v">$group</span>; <span class="v">$StaffGroup</span>; <span class="v">$homeDir</span><span class="v">$note</span>"</span>
+<span class="ln">223</span>        <span class="v">$Handoff</span>.Add(<span class="t">[pscustomobject]</span>@{ Name <span class="o">=</span> <span class="v">$display</span>; Username <span class="o">=</span> <span class="v">$sam</span>; TempPassword <span class="o">=</span> <span class="v">$password</span> })
+<span class="ln">224</span>    }
+<span class="ln">225</span>    <span class="kw">catch</span> {
+<span class="ln">226</span>        <span class="k-cmd">Write-Log</span> <span class="s">"FAIL <span class="v">$display</span> (<span class="v">$sam</span>): $(<span class="v">$_</span>.Exception.Message)"</span> ERROR
+<span class="ln">227</span>        <span class="k-cmd">Add-Result</span> <span class="v">$display</span> <span class="v">$sam</span> <span class="v">$dept</span> <span class="s">"Failed"</span> <span class="v">$_</span>.Exception.Message
+<span class="ln">228</span>    }
+<span class="ln">229</span>}
+<span class="ln">230</span>
+<span class="ln">231</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">232</span><span class="c"># Wrap up</span>
+<span class="ln">233</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">234</span><span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Export-Csv</span> <span class="p">-Path</span> <span class="v">$ResultFile</span> <span class="p">-NoTypeInformation</span> <span class="p">-WhatIf:</span><span class="v">$false</span>
+<span class="ln">235</span><span class="kw">if</span> (<span class="v">$Handoff</span>.Count <span class="o">-gt</span> <span class="n">0</span>) {
+<span class="ln">236</span>    <span class="v">$Handoff</span> <span class="o">|</span> <span class="k-cmd">Export-Csv</span> <span class="p">-Path</span> <span class="v">$HandoffFile</span> <span class="p">-NoTypeInformation</span> <span class="p">-WhatIf:</span><span class="v">$false</span>
+<span class="ln">237</span>    <span class="k-cmd">Write-Log</span> <span class="s">"Temporary passwords saved to <span class="v">$HandoffFile</span> - hand them over securely, then DELETE this file"</span> WARN
+<span class="ln">238</span>}
+<span class="ln">239</span>
+<span class="ln">240</span><span class="v">$summary</span> <span class="o">=</span> (<span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Group-Object</span> Status <span class="o">|</span> <span class="k-cmd">ForEach-Object</span> { <span class="s">"$(<span class="v">$_</span>.Name): $(<span class="v">$_</span>.Count)"</span> }) <span class="o">-join</span> <span class="s">" | "</span>
+<span class="ln">241</span><span class="k-cmd">Write-Log</span> <span class="s">"Run finished | <span class="v">$summary</span>"</span>
+<span class="ln">242</span><span class="k-cmd">Write-Log</span> <span class="s">"Log: <span class="v">$LogFile</span>"</span>
+<span class="ln">243</span><span class="k-cmd">Write-Log</span> <span class="s">"Results: <span class="v">$ResultFile</span>"</span>
+<span class="ln">244</span>
+<span class="ln">245</span><span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Format-Table</span> <span class="p">-AutoSize</span></pre>
+          <div class="splitter"></div>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\New-LabUsers.ps1 -CsvPath .\NewHires-520879.csv -Ticket 520879</span>
+<span class="gr">2026-10-01 16:17:48 [INFO] Run started by Administrator on DC01 | 2 rows from .\NewHires-520879.csv | Ticket: #520879 | WhatIf: False</span>
+<span class="g">2026-10-01 16:17:48 [OK] OK   created Stephen Strange -&gt; sstrange in OU=IT</span>
+<span class="g">2026-10-01 16:17:49 [OK] OK   sstrange added to GRP-IT, Lab Staff</span>
+<span class="g">2026-10-01 16:17:49 [OK] OK   home folder \\DC01\Home$\sstrange (Modify for sstrange only)</span>
+<span class="g">2026-10-01 16:17:49 [OK] OK   created Hope Van Dyne -&gt; hvandyne in OU=Finance</span>
+<span class="g">2026-10-01 16:17:49 [OK] OK   hvandyne added to GRP-Finance, Lab Staff</span>
+<span class="g">2026-10-01 16:17:49 [OK] OK   home folder \\DC01\Home$\hvandyne (Modify for hvandyne only)</span>
+<span class="y">2026-10-01 16:17:49 [WARN] Temporary passwords saved to C:\Scripts\Lab3\Logs\New-LabUsers-20261001-161748-HANDOFF.csv - hand them over securely, then DELETE this file</span>
+<span class="gr">2026-10-01 16:17:49 [INFO] Run finished | Created: 2</span>
+
+Name            Username Department Status  Detail
+----            -------- ---------- ------  ------
+Stephen Strange sstrange IT         Created OU=IT; GRP-IT; Lab Staff; \\DC01\Home$\sstrange
+Hope Van Dyne   hvandyne Finance    Created OU=Finance; GRP-Finance; Lab Staff; \\DC01\Home$\hvandyne</pre>
+          <div class="meta"><span>245 lines &middot; <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/New-LabUsers.ps1">view on GitHub</a></span><span>Completed</span></div>
+        </div>
+        <div class="panel" role="tabpanel" id="panel-rem" aria-labelledby="tab-rem">
+<pre class="code"><span class="ln">1</span><span class="c">&lt;#</span>
+<span class="ln">2</span><span class="c">.SYNOPSIS</span>
+<span class="ln">3</span><span class="c">    Offboards departing users: disables, strips access, archives, and documents.</span>
+<span class="ln">4</span><span class="c"></span>
+<span class="ln">5</span><span class="c">.DESCRIPTION</span>
+<span class="ln">6</span><span class="c">    For each username, the script:</span>
+<span class="ln">7</span><span class="c">      1. Refuses to touch protected accounts (Administrator, Domain Admins, service accounts)</span>
+<span class="ln">8</span><span class="c">      2. Records the user's group memberships in the log (so access could be restored)</span>
+<span class="ln">9</span><span class="c">      3. Disables the account and resets the password to a random value</span>
+<span class="ln">10</span><span class="c">      4. Removes the user from every group except Domain Users</span>
+<span class="ln">11</span><span class="c">      5. Stamps the Description with the date, who did it, and the ticket number</span>
+<span class="ln">12</span><span class="c">      6. Moves the account to the Disabled Users OU (outside Lab Users, so no GPOs apply)</span>
+<span class="ln">13</span><span class="c">      7. Moves the home folder to an admin-only archive and clears the H: drive mapping</span>
+<span class="ln">14</span><span class="c"></span>
+<span class="ln">15</span><span class="c">    Nothing is deleted. Supports -WhatIf to preview every change.</span>
+<span class="ln">16</span><span class="c"></span>
+<span class="ln">17</span><span class="c">.PARAMETER Identity</span>
+<span class="ln">18</span><span class="c">    One or more usernames (SamAccountName).</span>
+<span class="ln">19</span><span class="c"></span>
+<span class="ln">20</span><span class="c">.PARAMETER Ticket</span>
+<span class="ln">21</span><span class="c">    Help desk ticket number for the audit trail, e.g. 482915.</span>
+<span class="ln">22</span><span class="c"></span>
+<span class="ln">23</span><span class="c">.EXAMPLE</span>
+<span class="ln">24</span><span class="c">    .\Remove-LabUser.ps1 -Identity slang -Ticket 482915 -WhatIf</span>
+<span class="ln">25</span><span class="c"></span>
+<span class="ln">26</span><span class="c">.EXAMPLE</span>
+<span class="ln">27</span><span class="c">    "slang","wmaximoff" | .\Remove-LabUser.ps1 -Ticket 482915</span>
+<span class="ln">28</span><span class="c"></span>
+<span class="ln">29</span><span class="c">.NOTES</span>
+<span class="ln">30</span><span class="c">    Author: Emil Aguirre Herrera</span>
+<span class="ln">31</span><span class="c">    Lab:    Home Lab 3 - PowerShell Automation (emillab.local)</span>
+<span class="ln">32</span><span class="c">    Run on DC01 (home folders are moved using local paths).</span>
+<span class="ln">33</span><span class="c">#&gt;</span>
+<span class="ln">34</span>[<span class="a">CmdletBinding</span>(SupportsShouldProcess)]
+<span class="ln">35</span><span class="kw">param</span>(
+<span class="ln">36</span>    [<span class="a">Parameter</span>(Mandatory, ValueFromPipeline)]
+<span class="ln">37</span>    <span class="t">[string[]]</span><span class="v">$Identity</span>,
+<span class="ln">38</span>
+<span class="ln">39</span>    [<span class="a">Parameter</span>(Mandatory)]
+<span class="ln">40</span>    <span class="t">[string]</span><span class="v">$Ticket</span>,
+<span class="ln">41</span>
+<span class="ln">42</span>    <span class="t">[string]</span><span class="v">$LogDir</span>      <span class="o">=</span> <span class="s">"C:\Scripts\Lab3\Logs"</span>,
+<span class="ln">43</span>    <span class="t">[string]</span><span class="v">$DisabledOU</span>  <span class="o">=</span> <span class="s">"OU=Disabled Users,DC=emillab,DC=local"</span>,
+<span class="ln">44</span>    <span class="t">[string]</span><span class="v">$HomeLocal</span>   <span class="o">=</span> <span class="s">"C:\Shares\Home"</span>,
+<span class="ln">45</span>    <span class="t">[string]</span><span class="v">$ArchiveRoot</span> <span class="o">=</span> <span class="s">"C:\Shares\Archive"</span>
+<span class="ln">46</span>)
+<span class="ln">47</span>
+<span class="ln">48</span><span class="kw">begin</span> {
+<span class="ln">49</span>    <span class="k-cmd">Import-Module</span> ActiveDirectory <span class="p">-ErrorAction</span> Stop
+<span class="ln">50</span>
+<span class="ln">51</span>    <span class="v">$Protected</span>  <span class="o">=</span> @(<span class="s">"Administrator"</span>, <span class="s">"krbtgt"</span>, <span class="s">"Guest"</span>)
+<span class="ln">52</span>    <span class="v">$Stamp</span>      <span class="o">=</span> <span class="k-cmd">Get-Date</span> <span class="p">-Format</span> <span class="s">"yyyyMMdd-HHmmss"</span>
+<span class="ln">53</span>    <span class="v">$Today</span>      <span class="o">=</span> <span class="k-cmd">Get-Date</span> <span class="p">-Format</span> <span class="s">"yyyy-MM-dd"</span>
+<span class="ln">54</span>    <span class="v">$LogFile</span>    <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$LogDir</span> <span class="s">"Remove-LabUser-<span class="v">$Stamp</span>.log"</span>
+<span class="ln">55</span>    <span class="v">$ResultFile</span> <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$LogDir</span> <span class="s">"Remove-LabUser-<span class="v">$Stamp</span>-results.csv"</span>
+<span class="ln">56</span>    <span class="v">$Results</span>    <span class="o">=</span> <span class="k-cmd">New-Object</span> System.Collections.Generic.List<span class="t">[object]</span>
+<span class="ln">57</span>
+<span class="ln">58</span>    <span class="kw">if</span> (<span class="o">-not</span> (<span class="k-cmd">Test-Path</span> <span class="v">$LogDir</span>)) { <span class="k-cmd">New-Item</span> <span class="p">-Path</span> <span class="v">$LogDir</span> <span class="p">-ItemType</span> Directory <span class="p">-WhatIf:</span><span class="v">$false</span> <span class="o">|</span> <span class="k-cmd">Out-Null</span> }
+<span class="ln">59</span>
+<span class="ln">60</span>    <span class="kw">function</span> <span class="k-cmd">Write-Log</span> {
+<span class="ln">61</span>        <span class="kw">param</span>(
+<span class="ln">62</span>            [<span class="a">Parameter</span>(Mandatory)]<span class="t">[string]</span><span class="v">$Message</span>,
+<span class="ln">63</span>            [<span class="a">ValidateSet</span>(<span class="s">"INFO"</span>, <span class="s">"OK"</span>, <span class="s">"WARN"</span>, <span class="s">"ERROR"</span>)]<span class="t">[string]</span><span class="v">$Level</span> <span class="o">=</span> <span class="s">"INFO"</span>
+<span class="ln">64</span>        )
+<span class="ln">65</span>        <span class="v">$line</span> <span class="o">=</span> <span class="s">"{0} [{1}] {2}"</span> <span class="o">-f</span> (<span class="k-cmd">Get-Date</span> <span class="p">-Format</span> <span class="s">"yyyy-MM-dd HH:mm:ss"</span>), <span class="v">$Level</span>, <span class="v">$Message</span>
+<span class="ln">66</span>        <span class="k-cmd">Add-Content</span> <span class="p">-Path</span> <span class="v">$LogFile</span> <span class="p">-Value</span> <span class="v">$line</span> <span class="p">-WhatIf:</span><span class="v">$false</span>
+<span class="ln">67</span>        <span class="v">$color</span> <span class="o">=</span> @{ INFO <span class="o">=</span> <span class="s">"Gray"</span>; OK <span class="o">=</span> <span class="s">"Green"</span>; WARN <span class="o">=</span> <span class="s">"Yellow"</span>; ERROR <span class="o">=</span> <span class="s">"Red"</span> }[<span class="v">$Level</span>]
+<span class="ln">68</span>        <span class="k-cmd">Write-Host</span> <span class="v">$line</span> <span class="p">-ForegroundColor</span> <span class="v">$color</span>
+<span class="ln">69</span>    }
+<span class="ln">70</span>
+<span class="ln">71</span>    <span class="kw">function</span> <span class="k-cmd">Add-Result</span> {
+<span class="ln">72</span>        <span class="kw">param</span>(<span class="v">$Username</span>, <span class="v">$Name</span>, <span class="v">$Status</span>, <span class="v">$Detail</span>)
+<span class="ln">73</span>        <span class="v">$Results</span>.Add(<span class="t">[pscustomobject]</span>@{ Username <span class="o">=</span> <span class="v">$Username</span>; Name <span class="o">=</span> <span class="v">$Name</span>; Status <span class="o">=</span> <span class="v">$Status</span>; Detail <span class="o">=</span> <span class="v">$Detail</span> })
+<span class="ln">74</span>    }
+<span class="ln">75</span>
+<span class="ln">76</span>    <span class="kw">function</span> <span class="k-cmd">New-RandomPassword</span> {
+<span class="ln">77</span>        <span class="c"># Long random password nobody knows, so the account can't be used even if re-enabled by mistake</span>
+<span class="ln">78</span>        <span class="v">$chars</span> <span class="o">=</span> <span class="t">[char[]]</span><span class="s">"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*?"</span>
+<span class="ln">79</span>        <span class="kw">return</span> <span class="s">"Xx9!"</span> <span class="o">+</span> (<span class="o">-join</span> (<span class="n">1</span>..<span class="n">28</span> <span class="o">|</span> <span class="k-cmd">ForEach-Object</span> { <span class="v">$chars</span> <span class="o">|</span> <span class="k-cmd">Get-Random</span> }))
+<span class="ln">80</span>    }
+<span class="ln">81</span>
+<span class="ln">82</span>    <span class="c"># Pre-flight: the Disabled Users OU and archive folder must exist</span>
+<span class="ln">83</span>    <span class="kw">try</span> { <span class="k-cmd">Get-ADOrganizationalUnit</span> <span class="p">-Identity</span> <span class="v">$DisabledOU</span> <span class="p">-ErrorAction</span> Stop <span class="o">|</span> <span class="k-cmd">Out-Null</span> }
+<span class="ln">84</span>    <span class="kw">catch</span> { <span class="kw">throw</span> <span class="s">"Disabled Users OU not found: <span class="v">$DisabledOU</span>. Create it first."</span> }
+<span class="ln">85</span>    <span class="kw">if</span> (<span class="o">-not</span> (<span class="k-cmd">Test-Path</span> <span class="v">$ArchiveRoot</span>)) { <span class="kw">throw</span> <span class="s">"Archive folder not found: <span class="v">$ArchiveRoot</span>. Create it first."</span> }
+<span class="ln">86</span>
+<span class="ln">87</span>    <span class="k-cmd">Write-Log</span> <span class="s">"Run started by <span class="v">$env:USERNAME</span> | Ticket #<span class="v">$Ticket</span> | WhatIf: <span class="v">$WhatIfPreference</span>"</span>
+<span class="ln">88</span>}
+<span class="ln">89</span>
+<span class="ln">90</span><span class="kw">process</span> {
+<span class="ln">91</span>    <span class="kw">foreach</span> (<span class="v">$sam</span> <span class="kw">in</span> <span class="v">$Identity</span>) {
+<span class="ln">92</span>        <span class="v">$sam</span> <span class="o">=</span> <span class="v">$sam</span>.Trim()
+<span class="ln">93</span>
+<span class="ln">94</span>        <span class="c"># --- Find the user ---------------------------------------------------</span>
+<span class="ln">95</span>        <span class="v">$user</span> <span class="o">=</span> <span class="k-cmd">Get-ADUser</span> <span class="p">-Filter</span> <span class="s">"SamAccountName -eq '$(<span class="v">$sam</span> -replace "</span><span class="s">'", "''")'</span><span class="s">" -Properties MemberOf, HomeDirectory, Description, Enabled</span>
+<span class="ln">96</span><span class="s">        if (-not <span class="v">$user</span>) {</span>
+<span class="ln">97</span><span class="s">            Write-Log "</span>SKIP <span class="v">$sam</span>`: no such user <span class="kw">in</span> AD<span class="s">" WARN</span>
+<span class="ln">98</span><span class="s">            Add-Result <span class="v">$sam</span> "</span><span class="s">" "</span>Skipped<span class="s">" "</span>User not found<span class="s">"</span>
+<span class="ln">99</span><span class="s">            continue</span>
+<span class="ln">100</span><span class="s">        }</span>
+<span class="ln">101</span><span class="s">        <span class="v">$name</span> = <span class="v">$user</span>.Name</span>
+<span class="ln">102</span><span class="s"></span>
+<span class="ln">103</span><span class="s">        # --- Safety checks -----------------------------------------------------</span>
+<span class="ln">104</span><span class="s">        <span class="v">$groups</span> = @(<span class="v">$user</span>.MemberOf | ForEach-Object { (Get-ADGroup <span class="v">$_</span>).Name })</span>
+<span class="ln">105</span><span class="s">        if (<span class="v">$sam</span> -in <span class="v">$Protected</span> -or <span class="v">$groups</span> -contains "</span>Domain Admins<span class="s">" -or <span class="v">$user</span>.DistinguishedName -like "</span><span class="o">*</span>OU<span class="o">=</span>Service Accounts<span class="o">*</span><span class="s">") {</span>
+<span class="ln">106</span><span class="s">            Write-Log "</span>REFUSED <span class="v">$sam</span> (<span class="v">$name</span>): protected account (admin, built-<span class="kw">in</span> or service account)<span class="s">" ERROR</span>
+<span class="ln">107</span><span class="s">            Add-Result <span class="v">$sam</span> <span class="v">$name</span> "</span>Refused<span class="s">" "</span>Protected account<span class="s">"</span>
+<span class="ln">108</span><span class="s">            continue</span>
+<span class="ln">109</span><span class="s">        }</span>
+<span class="ln">110</span><span class="s">        if (<span class="v">$user</span>.DistinguishedName -like "</span><span class="o">*</span><span class="v">$DisabledOU</span><span class="s">") {</span>
+<span class="ln">111</span><span class="s">            Write-Log "</span>SKIP <span class="v">$sam</span> (<span class="v">$name</span>): already offboarded<span class="s">" WARN</span>
+<span class="ln">112</span><span class="s">            Add-Result <span class="v">$sam</span> <span class="v">$name</span> "</span>Skipped<span class="s">" "</span>Already <span class="kw">in</span> Disabled Users<span class="s">"</span>
+<span class="ln">113</span><span class="s">            continue</span>
+<span class="ln">114</span><span class="s">        }</span>
+<span class="ln">115</span><span class="s"></span>
+<span class="ln">116</span><span class="s">        <span class="v">$groupList</span>  = if (<span class="v">$groups</span>.Count) { <span class="v">$groups</span> -join "</span>, <span class="s">" } else { "</span>(none)<span class="s">" }</span>
+<span class="ln">117</span><span class="s">        <span class="v">$archiveDir</span> = Join-Path <span class="v">$ArchiveRoot</span> "</span><span class="v">$sam</span>-<span class="v">$Today</span><span class="s">"</span>
+<span class="ln">118</span><span class="s">        <span class="v">$homeDir</span>    = Join-Path <span class="v">$HomeLocal</span> <span class="v">$sam</span></span>
+<span class="ln">119</span><span class="s"></span>
+<span class="ln">120</span><span class="s">        Write-Log "</span><span class="v">$sam</span> (<span class="v">$name</span>) <span class="o">|</span> groups before: <span class="v">$groupList</span><span class="s">"</span>
+<span class="ln">121</span><span class="s"></span>
+<span class="ln">122</span><span class="s">        if (-not <span class="v">$PSCmdlet</span>.ShouldProcess("</span><span class="v">$name</span> (<span class="v">$sam</span>)<span class="s">", "</span>Disable, reset password, remove from groups, move to Disabled Users, archive home folder<span class="s">")) {</span>
+<span class="ln">123</span><span class="s">            Write-Log "</span>WHATIF <span class="v">$sam</span> would be disabled, removed from: <span class="v">$groupList</span>, moved to Disabled Users, home folder -<span class="o">&gt;</span> <span class="v">$archiveDir</span><span class="s">"</span>
+<span class="ln">124</span><span class="s">            Add-Result <span class="v">$sam</span> <span class="v">$name</span> "</span>WhatIf<span class="s">" "</span>Would be offboarded (groups: <span class="v">$groupList</span>)<span class="s">"</span>
+<span class="ln">125</span><span class="s">            continue</span>
+<span class="ln">126</span><span class="s">        }</span>
+<span class="ln">127</span><span class="s"></span>
+<span class="ln">128</span><span class="s">        # --- Offboard ----------------------------------------------------------</span>
+<span class="ln">129</span><span class="s">        try {</span>
+<span class="ln">130</span><span class="s">            Disable-ADAccount -Identity <span class="v">$user</span> -ErrorAction Stop</span>
+<span class="ln">131</span><span class="s">            Set-ADAccountPassword -Identity <span class="v">$user</span> -Reset -NewPassword (ConvertTo-SecureString (New-RandomPassword) -AsPlainText -Force) -ErrorAction Stop</span>
+<span class="ln">132</span><span class="s">            Write-Log "</span>OK   <span class="v">$sam</span> disabled and password reset<span class="s">" OK</span>
+<span class="ln">133</span><span class="s"></span>
+<span class="ln">134</span><span class="s">            foreach (<span class="v">$g</span> in <span class="v">$groups</span>) {</span>
+<span class="ln">135</span><span class="s">                Remove-ADGroupMember -Identity <span class="v">$g</span> -Members <span class="v">$user</span> -Confirm:<span class="v">$false</span> -ErrorAction Stop</span>
+<span class="ln">136</span><span class="s">            }</span>
+<span class="ln">137</span><span class="s">            Write-Log "</span>OK   <span class="v">$sam</span> removed from $(<span class="v">$groups</span>.Count) group(s)<span class="s">" OK</span>
+<span class="ln">138</span><span class="s"></span>
+<span class="ln">139</span><span class="s">            Set-ADUser -Identity <span class="v">$user</span> -Description "</span>Disabled <span class="v">$Today</span> by <span class="v">$env:USERNAME</span> - Ticket <span class="c">#$Ticket" -HomeDirectory $null -HomeDrive $null -ErrorAction Stop</span>
+<span class="ln">140</span>            <span class="k-cmd">Move-ADObject</span> <span class="p">-Identity</span> <span class="v">$user</span>.DistinguishedName <span class="p">-TargetPath</span> <span class="v">$DisabledOU</span> <span class="p">-ErrorAction</span> Stop
+<span class="ln">141</span>            <span class="k-cmd">Write-Log</span> <span class="s">"OK   <span class="v">$sam</span> moved to Disabled Users, description stamped"</span> OK
+<span class="ln">142</span>
+<span class="ln">143</span>            <span class="kw">if</span> (<span class="k-cmd">Test-Path</span> <span class="v">$homeDir</span>) {
+<span class="ln">144</span>                <span class="k-cmd">Move-Item</span> <span class="p">-Path</span> <span class="v">$homeDir</span> <span class="p">-Destination</span> <span class="v">$archiveDir</span> <span class="p">-ErrorAction</span> Stop
+<span class="ln">145</span>                <span class="k-cmd">Write-Log</span> <span class="s">"OK   home folder archived to <span class="v">$archiveDir</span>"</span> OK
+<span class="ln">146</span>                <span class="v">$homeNote</span> <span class="o">=</span> <span class="s">"home -&gt; <span class="v">$archiveDir</span>"</span>
+<span class="ln">147</span>            }
+<span class="ln">148</span>            <span class="kw">else</span> {
+<span class="ln">149</span>                <span class="k-cmd">Write-Log</span> <span class="s">"     no home folder at <span class="v">$homeDir</span>"</span> INFO
+<span class="ln">150</span>                <span class="v">$homeNote</span> <span class="o">=</span> <span class="s">"no home folder"</span>
+<span class="ln">151</span>            }
+<span class="ln">152</span>
+<span class="ln">153</span>            <span class="k-cmd">Add-Result</span> <span class="v">$sam</span> <span class="v">$name</span> <span class="s">"Offboarded"</span> <span class="s">"Removed from: <span class="v">$groupList</span>; <span class="v">$homeNote</span>"</span>
+<span class="ln">154</span>        }
+<span class="ln">155</span>        <span class="kw">catch</span> {
+<span class="ln">156</span>            <span class="k-cmd">Write-Log</span> <span class="s">"FAIL <span class="v">$sam</span> (<span class="v">$name</span>): $(<span class="v">$_</span>.Exception.Message)"</span> ERROR
+<span class="ln">157</span>            <span class="k-cmd">Add-Result</span> <span class="v">$sam</span> <span class="v">$name</span> <span class="s">"Failed"</span> <span class="v">$_</span>.Exception.Message
+<span class="ln">158</span>        }
+<span class="ln">159</span>    }
+<span class="ln">160</span>}
+<span class="ln">161</span>
+<span class="ln">162</span><span class="kw">end</span> {
+<span class="ln">163</span>    <span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Export-Csv</span> <span class="p">-Path</span> <span class="v">$ResultFile</span> <span class="p">-NoTypeInformation</span> <span class="p">-WhatIf:</span><span class="v">$false</span>
+<span class="ln">164</span>    <span class="v">$summary</span> <span class="o">=</span> (<span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Group-Object</span> Status <span class="o">|</span> <span class="k-cmd">ForEach-Object</span> { <span class="s">"$(<span class="v">$_</span>.Name): $(<span class="v">$_</span>.Count)"</span> }) <span class="o">-join</span> <span class="s">" | "</span>
+<span class="ln">165</span>    <span class="k-cmd">Write-Log</span> <span class="s">"Run finished | <span class="v">$summary</span>"</span>
+<span class="ln">166</span>    <span class="k-cmd">Write-Log</span> <span class="s">"Log: <span class="v">$LogFile</span>"</span>
+<span class="ln">167</span>    <span class="v">$Results</span> <span class="o">|</span> <span class="k-cmd">Format-Table</span> <span class="p">-AutoSize</span>
+<span class="ln">168</span>}</pre>
+          <div class="splitter"></div>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\Remove-LabUser.ps1 -Identity wmaximoff -Ticket 125558</span>
+<span class="gr">2026-10-01 16:32:32 [INFO] Run started by Administrator | Ticket #125558 | WhatIf: False</span>
+<span class="gr">2026-10-01 16:32:32 [INFO] wmaximoff (Wanda Maximoff) | groups before: GRP-Marketing, Lab Staff</span>
+<span class="g">2026-10-01 16:32:32 [OK] OK   wmaximoff disabled and password reset</span>
+<span class="g">2026-10-01 16:32:32 [OK] OK   wmaximoff removed from 2 group(s)</span>
+<span class="g">2026-10-01 16:32:32 [OK] OK   wmaximoff moved to Disabled Users, description stamped</span>
+<span class="g">2026-10-01 16:32:32 [OK] OK   home folder archived to C:\Shares\Archive\wmaximoff-2026-10-01</span>
+<span class="gr">2026-10-01 16:32:32 [INFO] Run finished | Offboarded: 1</span>
+
+Username  Name           Status     Detail
+--------  ----           ------     ------
+wmaximoff Wanda Maximoff Offboarded Removed from: GRP-Marketing, Lab Staff; home -&gt; C:\Shares\Archive\wmaximoff-2026-10-01</pre>
+          <div class="meta"><span>168 lines &middot; <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/Remove-LabUser.ps1">view on GitHub</a></span><span>Completed</span></div>
+        </div>
+        <div class="panel" role="tabpanel" id="panel-rep" aria-labelledby="tab-rep">
+<pre class="code"><span class="ln">1</span><span class="c">&lt;#</span>
+<span class="ln">2</span><span class="c">.SYNOPSIS</span>
+<span class="ln">3</span><span class="c">    Account health report: locked out, disabled, inactive, and password problems.</span>
+<span class="ln">4</span><span class="c"></span>
+<span class="ln">5</span><span class="c">.DESCRIPTION</span>
+<span class="ln">6</span><span class="c">    Read-only. Checks every user account in the domain and flags:</span>
+<span class="ln">7</span><span class="c">      - Locked out accounts</span>
+<span class="ln">8</span><span class="c">      - Disabled accounts</span>
+<span class="ln">9</span><span class="c">      - Enabled accounts that have never signed in, or have been idle for InactiveDays+</span>
+<span class="ln">10</span><span class="c">      - Passwords that must be changed, have expired, or expire within ExpiringDays</span>
+<span class="ln">11</span><span class="c">      - Accounts whose password never expires</span>
+<span class="ln">12</span><span class="c"></span>
+<span class="ln">13</span><span class="c">    Writes a CSV (every account, for filtering in Excel) and an HTML report</span>
+<span class="ln">14</span><span class="c">    (one section per problem, for a manager or a ticket attachment).</span>
+<span class="ln">15</span><span class="c"></span>
+<span class="ln">16</span><span class="c">.PARAMETER InactiveDays</span>
+<span class="ln">17</span><span class="c">    Days without a sign-in before an enabled account counts as inactive. Default 30.</span>
+<span class="ln">18</span><span class="c"></span>
+<span class="ln">19</span><span class="c">.PARAMETER ExpiringDays</span>
+<span class="ln">20</span><span class="c">    Flag passwords that expire within this many days. Default 14.</span>
+<span class="ln">21</span><span class="c"></span>
+<span class="ln">22</span><span class="c">.PARAMETER Open</span>
+<span class="ln">23</span><span class="c">    Open the HTML report when finished.</span>
+<span class="ln">24</span><span class="c"></span>
+<span class="ln">25</span><span class="c">.EXAMPLE</span>
+<span class="ln">26</span><span class="c">    .\Get-LabUserReport.ps1 -Open</span>
+<span class="ln">27</span><span class="c"></span>
+<span class="ln">28</span><span class="c">.EXAMPLE</span>
+<span class="ln">29</span><span class="c">    .\Get-LabUserReport.ps1 -InactiveDays 60 -ExpiringDays 45</span>
+<span class="ln">30</span><span class="c"></span>
+<span class="ln">31</span><span class="c">.NOTES</span>
+<span class="ln">32</span><span class="c">    Author: Emil Aguirre Herrera</span>
+<span class="ln">33</span><span class="c">    Lab:    Home Lab 3 - PowerShell Automation (emillab.local)</span>
+<span class="ln">34</span><span class="c">    LastLogonDate comes from lastLogonTimestamp, which AD only updates every</span>
+<span class="ln">35</span><span class="c">    9-14 days by design. Good for "inactive 30+ days", not for "signed in today".</span>
+<span class="ln">36</span><span class="c">#&gt;</span>
+<span class="ln">37</span>[<span class="a">CmdletBinding</span>()]
+<span class="ln">38</span><span class="kw">param</span>(
+<span class="ln">39</span>    <span class="t">[int]</span><span class="v">$InactiveDays</span>  <span class="o">=</span> <span class="n">30</span>,
+<span class="ln">40</span>    <span class="t">[int]</span><span class="v">$ExpiringDays</span>  <span class="o">=</span> <span class="n">14</span>,
+<span class="ln">41</span>    <span class="t">[string]</span><span class="v">$ReportDir</span>  <span class="o">=</span> <span class="s">"C:\Scripts\Lab3\Reports"</span>,
+<span class="ln">42</span>    <span class="t">[string]</span><span class="v">$SearchBase</span>,
+<span class="ln">43</span>    <span class="t">[switch]</span><span class="v">$Open</span>
+<span class="ln">44</span>)
+<span class="ln">45</span>
+<span class="ln">46</span><span class="k-cmd">Import-Module</span> ActiveDirectory <span class="p">-ErrorAction</span> Stop
+<span class="ln">47</span>
+<span class="ln">48</span><span class="kw">if</span> (<span class="o">-not</span> <span class="v">$SearchBase</span>) { <span class="v">$SearchBase</span> <span class="o">=</span> (<span class="k-cmd">Get-ADDomain</span>).DistinguishedName }
+<span class="ln">49</span><span class="kw">if</span> (<span class="o">-not</span> (<span class="k-cmd">Test-Path</span> <span class="v">$ReportDir</span>)) { <span class="k-cmd">New-Item</span> <span class="p">-Path</span> <span class="v">$ReportDir</span> <span class="p">-ItemType</span> Directory <span class="o">|</span> <span class="k-cmd">Out-Null</span> }
+<span class="ln">50</span>
+<span class="ln">51</span><span class="v">$Now</span>      <span class="o">=</span> <span class="k-cmd">Get-Date</span>
+<span class="ln">52</span><span class="v">$Stamp</span>    <span class="o">=</span> <span class="v">$Now</span>.ToString(<span class="s">"yyyyMMdd-HHmmss"</span>)
+<span class="ln">53</span><span class="v">$CsvFile</span>  <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$ReportDir</span> <span class="s">"UserReport-<span class="v">$Stamp</span>.csv"</span>
+<span class="ln">54</span><span class="v">$HtmlFile</span> <span class="o">=</span> <span class="k-cmd">Join-Path</span> <span class="v">$ReportDir</span> <span class="s">"UserReport-<span class="v">$Stamp</span>.html"</span>
+<span class="ln">55</span>
+<span class="ln">56</span><span class="c"># Built-in accounts Windows keeps disabled on purpose - not worth reporting</span>
+<span class="ln">57</span><span class="v">$Skip</span>  <span class="o">=</span> @(<span class="s">"krbtgt"</span>, <span class="s">"Guest"</span>, <span class="s">"DefaultAccount"</span>, <span class="s">"WDAGUtilityAccount"</span>)
+<span class="ln">58</span><span class="v">$Props</span> <span class="o">=</span> @(<span class="s">"Enabled"</span>, <span class="s">"LockedOut"</span>, <span class="s">"LastLogonDate"</span>, <span class="s">"PasswordLastSet"</span>, <span class="s">"PasswordExpired"</span>,
+<span class="ln">59</span>           <span class="s">"PasswordNeverExpires"</span>, <span class="s">"msDS-UserPasswordExpiryTimeComputed"</span>, <span class="s">"Department"</span>, <span class="s">"Title"</span>)
+<span class="ln">60</span>
+<span class="ln">61</span><span class="v">$users</span> <span class="o">=</span> <span class="k-cmd">Get-ADUser</span> <span class="p">-Filter</span> <span class="o">*</span> <span class="p">-SearchBase</span> <span class="v">$SearchBase</span> <span class="p">-Properties</span> <span class="v">$Props</span> <span class="o">|</span>
+<span class="ln">62</span>         <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.SamAccountName <span class="o">-notin</span> <span class="v">$Skip</span> }
+<span class="ln">63</span>
+<span class="ln">64</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">65</span><span class="c"># Check each account</span>
+<span class="ln">66</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">67</span><span class="v">$rows</span> <span class="o">=</span> <span class="kw">foreach</span> (<span class="v">$u</span> <span class="kw">in</span> <span class="v">$users</span>) {
+<span class="ln">68</span>    <span class="c"># AD stores the expiry as a FileTime; 0 = must change now, MaxValue = never expires</span>
+<span class="ln">69</span>    <span class="v">$raw</span>     <span class="o">=</span> <span class="v">$u</span>.<span class="s">'msDS-UserPasswordExpiryTimeComputed'</span>
+<span class="ln">70</span>    <span class="v">$expires</span> <span class="o">=</span> <span class="kw">if</span> (<span class="v">$raw</span> <span class="o">-and</span> <span class="v">$raw</span> <span class="o">-gt</span> <span class="n">0</span> <span class="o">-and</span> <span class="v">$raw</span> <span class="o">-lt</span> <span class="t">[long]</span>::MaxValue) { <span class="t">[datetime]</span>::FromFileTime(<span class="v">$raw</span>) } <span class="kw">else</span> { <span class="v">$null</span> }
+<span class="ln">71</span>    <span class="v">$idle</span>    <span class="o">=</span> <span class="kw">if</span> (<span class="v">$u</span>.LastLogonDate) { <span class="t">[int]</span><span class="t">[math]</span>::Floor((<span class="v">$Now</span> - <span class="v">$u</span>.LastLogonDate).TotalDays) } <span class="kw">else</span> { <span class="v">$null</span> }
+<span class="ln">72</span>
+<span class="ln">73</span>    <span class="v">$issues</span> <span class="o">=</span> @()
+<span class="ln">74</span>    <span class="kw">if</span> (<span class="o">-not</span> <span class="v">$u</span>.Enabled) { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Disabled"</span> }
+<span class="ln">75</span>    <span class="kw">if</span> (<span class="v">$u</span>.LockedOut)    { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Locked out"</span> }
+<span class="ln">76</span>
+<span class="ln">77</span>    <span class="kw">if</span> (<span class="v">$u</span>.Enabled) {
+<span class="ln">78</span>        <span class="kw">if</span> (<span class="o">-not</span> <span class="v">$u</span>.LastLogonDate)   { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Never signed in"</span> }
+<span class="ln">79</span>        <span class="kw">elseif</span> (<span class="v">$idle</span> <span class="o">-ge</span> <span class="v">$InactiveDays</span>) { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Inactive <span class="v">$idle</span> days"</span> }
+<span class="ln">80</span>
+<span class="ln">81</span>        <span class="kw">if</span> (<span class="o">-not</span> <span class="v">$u</span>.PasswordLastSet) { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Must change password"</span> }
+<span class="ln">82</span>        <span class="kw">elseif</span> (<span class="v">$u</span>.PasswordExpired)  { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Password expired"</span> }
+<span class="ln">83</span>        <span class="kw">elseif</span> (<span class="v">$expires</span> <span class="o">-and</span> <span class="v">$expires</span> <span class="o">-le</span> <span class="v">$Now</span>.AddDays(<span class="v">$ExpiringDays</span>)) {
+<span class="ln">84</span>            <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Password expires in $([int][math]::Ceiling((<span class="v">$expires</span> - <span class="v">$Now</span>).TotalDays)) days"</span>
+<span class="ln">85</span>        }
+<span class="ln">86</span>
+<span class="ln">87</span>        <span class="kw">if</span> (<span class="v">$u</span>.PasswordNeverExpires) { <span class="v">$issues</span> <span class="o">+=</span> <span class="s">"Password never expires"</span> }
+<span class="ln">88</span>    }
+<span class="ln">89</span>
+<span class="ln">90</span>    <span class="t">[pscustomobject]</span>@{
+<span class="ln">91</span>        Username        <span class="o">=</span> <span class="v">$u</span>.SamAccountName
+<span class="ln">92</span>        Name            <span class="o">=</span> <span class="v">$u</span>.Name
+<span class="ln">93</span>        Department      <span class="o">=</span> <span class="v">$u</span>.Department
+<span class="ln">94</span>        Enabled         <span class="o">=</span> <span class="v">$u</span>.Enabled
+<span class="ln">95</span>        LockedOut       <span class="o">=</span> <span class="v">$u</span>.LockedOut
+<span class="ln">96</span>        LastSignIn      <span class="o">=</span> <span class="kw">if</span> (<span class="v">$u</span>.LastLogonDate) { <span class="v">$u</span>.LastLogonDate.ToString(<span class="s">"yyyy-MM-dd HH:mm"</span>) } <span class="kw">else</span> { <span class="s">"Never"</span> }
+<span class="ln">97</span>        PasswordLastSet <span class="o">=</span> <span class="kw">if</span> (<span class="v">$u</span>.PasswordLastSet) { <span class="v">$u</span>.PasswordLastSet.ToString(<span class="s">"yyyy-MM-dd"</span>) } <span class="kw">else</span> { <span class="s">"Must change"</span> }
+<span class="ln">98</span>        PasswordExpires <span class="o">=</span> <span class="kw">if</span> (<span class="v">$u</span>.PasswordNeverExpires) { <span class="s">"Never"</span> } <span class="kw">elseif</span> (<span class="v">$expires</span>) { <span class="v">$expires</span>.ToString(<span class="s">"yyyy-MM-dd"</span>) } <span class="kw">else</span> { <span class="s">""</span> }
+<span class="ln">99</span>        OU              <span class="o">=</span> (<span class="v">$u</span>.DistinguishedName <span class="o">-split</span> <span class="s">"(?&lt;!\\),"</span>, <span class="n">2</span>)[<span class="n">1</span>]
+<span class="ln">100</span>        Issues          <span class="o">=</span> <span class="kw">if</span> (<span class="v">$issues</span>) { <span class="v">$issues</span> <span class="o">-join</span> <span class="s">"; "</span> } <span class="kw">else</span> { <span class="s">"OK"</span> }
+<span class="ln">101</span>    }
+<span class="ln">102</span>}
+<span class="ln">103</span><span class="v">$rows</span> <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Sort-Object</span> Username)
+<span class="ln">104</span>
+<span class="ln">105</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">106</span><span class="c"># Group into report sections</span>
+<span class="ln">107</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">108</span><span class="v">$sections</span> <span class="o">=</span> <span class="t">[ordered]</span>@{
+<span class="ln">109</span>    <span class="s">"Locked out"</span>                              <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Locked out"</span> })
+<span class="ln">110</span>    <span class="s">"Disabled"</span>                                <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Disabled"</span> })
+<span class="ln">111</span>    <span class="s">"Never signed in"</span>                         <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Never signed in"</span> })
+<span class="ln">112</span>    <span class="s">"Inactive <span class="v">$InactiveDays</span>+ days"</span>            <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Inactive \d+ days"</span> })
+<span class="ln">113</span>    <span class="s">"Must change password at next sign-in"</span>    <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Must change password"</span> })
+<span class="ln">114</span>    <span class="s">"Password expired or expiring within <span class="v">$ExpiringDays</span> days"</span> <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"Password expire"</span> })
+<span class="ln">115</span>    <span class="s">"Password never expires"</span>                  <span class="o">=</span> @(<span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Where-Object</span> { <span class="v">$_</span>.Issues <span class="o">-match</span> <span class="s">"never expires"</span> })
+<span class="ln">116</span>}
+<span class="ln">117</span>
+<span class="ln">118</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">119</span><span class="c"># CSV</span>
+<span class="ln">120</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">121</span><span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Export-Csv</span> <span class="p">-Path</span> <span class="v">$CsvFile</span> <span class="p">-NoTypeInformation</span>
+<span class="ln">122</span>
+<span class="ln">123</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">124</span><span class="c"># HTML</span>
+<span class="ln">125</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">126</span><span class="v">$css</span> <span class="o">=</span> <span class="s">@"</span>
+<span class="ln">127</span><span class="s">&lt;style&gt;</span>
+<span class="ln">128</span><span class="s"> body { font-family: Segoe UI, Arial, sans-serif; margin: 24px; color: #1b1b1b; }</span>
+<span class="ln">129</span><span class="s"> h1 { margin-bottom: 4px; } .sub { color: #555; margin-top: 0; }</span>
+<span class="ln">130</span><span class="s"> h2 { margin-top: 28px; border-bottom: 2px solid #012456; padding-bottom: 4px; color: #012456; }</span>
+<span class="ln">131</span><span class="s"> table { border-collapse: collapse; font-size: 13px; margin-top: 6px; }</span>
+<span class="ln">132</span><span class="s"> th { background: #012456; color: #fff; text-align: left; padding: 5px 10px; }</span>
+<span class="ln">133</span><span class="s"> td { border-bottom: 1px solid #ddd; padding: 4px 10px; }</span>
+<span class="ln">134</span><span class="s"> tr:nth-child(even) td { background: #f4f6fa; }</span>
+<span class="ln">135</span><span class="s"> .summary td:last-child { text-align: right; font-weight: bold; }</span>
+<span class="ln">136</span><span class="s"> .none { color: #2e7d32; }</span>
+<span class="ln">137</span><span class="s">&lt;/style&gt;</span>
+<span class="ln">138</span><span class="s">"@</span>
+<span class="ln">139</span>
+<span class="ln">140</span><span class="v">$cols</span> <span class="o">=</span> <span class="s">"Username"</span>, <span class="s">"Name"</span>, <span class="s">"Department"</span>, <span class="s">"LastSignIn"</span>, <span class="s">"PasswordLastSet"</span>, <span class="s">"PasswordExpires"</span>, <span class="s">"OU"</span>, <span class="s">"Issues"</span>
+<span class="ln">141</span>
+<span class="ln">142</span><span class="v">$summaryRows</span> <span class="o">=</span> <span class="kw">foreach</span> (<span class="v">$k</span> <span class="kw">in</span> <span class="v">$sections</span>.Keys) { <span class="t">[pscustomobject]</span>@{ Check <span class="o">=</span> <span class="v">$k</span>; Accounts <span class="o">=</span> <span class="v">$sections</span>[<span class="v">$k</span>].Count } }
+<span class="ln">143</span><span class="v">$body</span>  <span class="o">=</span> <span class="s">"&lt;h1&gt;User Account Report - $((Get-ADDomain).DNSRoot)&lt;/h1&gt;"</span>
+<span class="ln">144</span><span class="v">$body</span> <span class="o">+=</span> <span class="s">"&lt;p class='sub'&gt;Generated $(<span class="v">$Now</span>.ToString('yyyy-MM-dd HH:mm')) by <span class="v">$env:USERNAME</span> on <span class="v">$env:COMPUTERNAME</span> | $(<span class="v">$rows</span>.Count) accounts checked&lt;/p&gt;"</span>
+<span class="ln">145</span><span class="v">$body</span> <span class="o">+=</span> (<span class="v">$summaryRows</span> <span class="o">|</span> <span class="k-cmd">ConvertTo-Html</span> <span class="p">-Fragment</span> <span class="p">-PreContent</span> <span class="s">"&lt;h2&gt;Summary&lt;/h2&gt;"</span>) <span class="o">-replace</span> <span class="s">"&lt;table&gt;"</span>, <span class="s">"&lt;table class='summary'&gt;"</span>
+<span class="ln">146</span>
+<span class="ln">147</span><span class="kw">foreach</span> (<span class="v">$k</span> <span class="kw">in</span> <span class="v">$sections</span>.Keys) {
+<span class="ln">148</span>    <span class="kw">if</span> (<span class="v">$sections</span>[<span class="v">$k</span>].Count) {
+<span class="ln">149</span>        <span class="v">$body</span> <span class="o">+=</span> <span class="v">$sections</span>[<span class="v">$k</span>] <span class="o">|</span> <span class="k-cmd">Select-Object</span> <span class="v">$cols</span> <span class="o">|</span> <span class="k-cmd">ConvertTo-Html</span> <span class="p">-Fragment</span> <span class="p">-PreContent</span> <span class="s">"&lt;h2&gt;<span class="v">$k</span> ($(<span class="v">$sections</span>[<span class="v">$k</span>].Count))&lt;/h2&gt;"</span>
+<span class="ln">150</span>    }
+<span class="ln">151</span>    <span class="kw">else</span> {
+<span class="ln">152</span>        <span class="v">$body</span> <span class="o">+=</span> <span class="s">"&lt;h2&gt;<span class="v">$k</span> (0)&lt;/h2&gt;&lt;p class='none'&gt;None&lt;/p&gt;"</span>
+<span class="ln">153</span>    }
+<span class="ln">154</span>}
+<span class="ln">155</span><span class="v">$body</span> <span class="o">+=</span> <span class="v">$rows</span> <span class="o">|</span> <span class="k-cmd">Select-Object</span> <span class="v">$cols</span> <span class="o">|</span> <span class="k-cmd">ConvertTo-Html</span> <span class="p">-Fragment</span> <span class="p">-PreContent</span> <span class="s">"&lt;h2&gt;All accounts ($(<span class="v">$rows</span>.Count))&lt;/h2&gt;"</span>
+<span class="ln">156</span>
+<span class="ln">157</span><span class="k-cmd">ConvertTo-Html</span> <span class="p">-Title</span> <span class="s">"User Account Report"</span> <span class="p">-Head</span> <span class="v">$css</span> <span class="p">-Body</span> <span class="v">$body</span> <span class="o">|</span> <span class="k-cmd">Out-File</span> <span class="p">-FilePath</span> <span class="v">$HtmlFile</span> <span class="p">-Encoding</span> utf8
+<span class="ln">158</span>
+<span class="ln">159</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">160</span><span class="c"># Console summary</span>
+<span class="ln">161</span><span class="c"># ---------------------------------------------------------------------------</span>
+<span class="ln">162</span><span class="k-cmd">Write-Host</span> <span class="s">"`nUser Account Report - $(<span class="v">$rows</span>.Count) accounts checked"</span> <span class="p">-ForegroundColor</span> Cyan
+<span class="ln">163</span><span class="v">$summaryRows</span> <span class="o">|</span> <span class="k-cmd">Format-Table</span> <span class="p">-AutoSize</span> <span class="o">|</span> <span class="k-cmd">Out-Host</span>
+<span class="ln">164</span><span class="kw">foreach</span> (<span class="v">$k</span> <span class="kw">in</span> <span class="s">"Locked out"</span>, <span class="s">"Disabled"</span>) {
+<span class="ln">165</span>    <span class="kw">if</span> (<span class="v">$sections</span>[<span class="v">$k</span>].Count) {
+<span class="ln">166</span>        <span class="k-cmd">Write-Host</span> <span class="s">"<span class="v">$k</span>`:"</span> <span class="p">-ForegroundColor</span> Yellow
+<span class="ln">167</span>        <span class="v">$sections</span>[<span class="v">$k</span>] <span class="o">|</span> <span class="k-cmd">Select-Object</span> Username, Name, LastSignIn, OU <span class="o">|</span> <span class="k-cmd">Format-Table</span> <span class="p">-AutoSize</span> <span class="o">|</span> <span class="k-cmd">Out-Host</span>
+<span class="ln">168</span>    }
+<span class="ln">169</span>}
+<span class="ln">170</span><span class="k-cmd">Write-Host</span> <span class="s">"CSV:  <span class="v">$CsvFile</span>"</span>
+<span class="ln">171</span><span class="k-cmd">Write-Host</span> <span class="s">"HTML: <span class="v">$HtmlFile</span>"</span>
+<span class="ln">172</span>
+<span class="ln">173</span><span class="kw">if</span> (<span class="v">$Open</span>) { <span class="k-cmd">Invoke-Item</span> <span class="v">$HtmlFile</span> }</pre>
+          <div class="splitter"></div>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; .\Get-LabUserReport.ps1</span>
+
+<span class="cy">User Account Report - 22 accounts checked</span>
+
+Check                                       Accounts
+-----                                       --------
+Locked out                                         0
+Disabled                                           2
+Never signed in                                   15
+Inactive 30+ days                                  0
+Must change password at next sign-in              14
+Password expired or expiring within 14 days        0
+Password never expires                             2
+
+<span class="y">Disabled:</span>
+
+Username  Name           LastSignIn OU
+--------  ----           ---------- --
+slang     Scott Lang     Never      OU=Disabled Users,DC=emillab,DC=local
+wmaximoff Wanda Maximoff Never      OU=Disabled Users,DC=emillab,DC=local
+
+CSV:  C:\Scripts\Lab3\Reports\UserReport-20261001-164134.csv
+HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-164134.html</pre>
+          <div class="meta"><span>173 lines &middot; <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/Get-LabUserReport.ps1">view on GitHub</a></span><span>Completed</span></div>
+        </div>
+      </div>
+      <h3><span class="cm">#</span>Design choices</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Choice</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>[CmdletBinding(SupportsShouldProcess)]</code></td><td>Gives every script a real <code>-WhatIf</code>. Every change sits behind <code>$PSCmdlet.ShouldProcess()</code>, while logging uses <code>-WhatIf:$false</code> so a dry run still leaves a record.</td></tr>
+          <tr><td><code>try</code> / <code>catch</code> per user</td><td>One bad account fails on its own line without stopping the rest of the batch.</td></tr>
+          <tr><td>Duplicate check before create</td><td>Makes onboarding safe to re-run. Same name means probably the same person, so a human decides.</td></tr>
+          <tr><td>Passwords built to meet complexity</td><td>If <code>New-ADUser</code> rejects a password, it still creates the account, but disabled, a lesson from <a href="https://emilagui01.github.io/ad-homelab/#troubleshooting">Lab 1</a>. Each temporary password is guaranteed one upper, lower, digit and symbol.</td></tr>
+          <tr><td>Handoff file kept separate from the log</td><td>Logs are kept; passwords are not. The handoff file is deleted after the passwords are handed out.</td></tr>
+          <tr><td>Offboarding disables, never deletes</td><td>Reversible, auditable, and keeps the account's SID and files for a manager or legal hold.</td></tr>
+          <tr><td>Pipeline input on <code>-Identity</code></td><td><code>"slang","wmaximoff" | .\Remove-LabUser.ps1 -Ticket 125558</code> works for batches.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== VERIFY ===================== -->
+  <section class="doc" id="verify" aria-labelledby="h-ver">
+    <div class="tabs"><span class="tab">Lab3.Tests.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-ver"><span class="fold"></span><span class="rg">#region</span> Verification</h2>
+      <p>Every claim on this page was checked on the lab machines and is backed by a screenshot, log or report above. The results are summarized here in the style of Pester, PowerShell's test framework. These checks were done by hand, not by a Pester run.</p>
+<pre class="console wrap"><span class="ps">PS C:\Scripts\Lab3&gt; Invoke-Pester .\Lab3.Tests.ps1</span>
+
+<span class="g">Describing Lab 3 - PowerShell Automation</span>
+<span class="ps">  Context Onboarding</span>
+<span class="g">    [+] Dry run changes nothing (15 WhatIf, 3 Skipped)</span>
+<span class="g">    [+] 15 accounts created in the right department OUs and groups</span>
+<span class="g">    [+] Username collision handled: Jessica Smith -&gt; jsmith2</span>
+<span class="g">    [+] Bad rows refused: 'Sales', 'Asgard'; existing pparker flagged</span>
+<span class="g">    [+] Each home folder grants Modify to its owner only</span>
+<span class="g">    [+] Second run creates nothing (18 Skipped)</span>
+<span class="g">    [+] New user must change password, gets H: and S:, Control Panel blocked</span>
+<span class="ps">  Context Offboarding</span>
+<span class="g">    [+] Protected account refused (Administrator)</span>
+<span class="g">    [+] Unknown account skipped (tstark)</span>
+<span class="g">    [+] Disabled, groups removed, moved to Disabled Users (slang, wmaximoff)</span>
+<span class="g">    [+] Home folder archived, nothing deleted</span>
+<span class="ps">  Context Reporting</span>
+<span class="g">    [+] Lockout detected, then cleared after Unlock-ADAccount</span>
+<span class="g">    [+] Counts reconcile after every change (20 -&gt; 22 accounts, 1 -&gt; 2 disabled)</span>
+<span class="ps">  Context Ticket workflow</span>
+<span class="g">    [+] Help topics route to Systems Administration with P3 / P2 SLAs</span>
+<span class="g">    [+] Accounts searchable in AD by ticket number (#520879, #125558)</span>
+<span class="g">    [+] Both tickets noted, replied to and resolved</span>
+
+<span class="g">Tests completed. Passed: 16 Failed: 0 Skipped: 0</span></pre>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== TROUBLESHOOTING ===================== -->
+  <section class="doc" id="troubleshooting" aria-labelledby="h-ts">
+    <div class="tabs"><span class="tab">Debug.log <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-ts"><span class="fold"></span><span class="rg">#region</span> Troubleshooting log</h2>
+
+      <div class="issue">
+        <div class="err">A pipeline pasted into the ISE console ran in two halves <span class="d"># ISE console, DC01</span></div>
+        <div class="body">
+          <div class="row"><span class="lbl">Symptom</span> A multi-line command pasted into the console ran its first line on its own, then threw a parser error on the leftover fragment.</div>
+          <div class="row"><span class="lbl">Cause</span> The ISE console runs each pasted line as soon as it is complete. A line that ends in <code>|</code> waits for more, but a line that doesn't is run immediately.</div>
+          <div class="row fix"><span class="lbl">Fix</span> Commands typed in the console were kept to one line. Anything longer went into the script pane and was run with <b>F8</b> (Run Selection).</div>
+        </div>
+      </div>
+
+      <div class="issue">
+        <div class="err">Duplicate check missed an existing user: Peter Parker <span class="d"># New-LabUsers.ps1</span></div>
+        <div class="body">
+          <div class="row"><span class="lbl">Symptom</span> The first version of the duplicate check would have created a second account for Peter Parker, who already existed as <code>pparker</code>.</div>
+          <div class="row"><span class="lbl">Cause</span> The check matched on <code>GivenName</code> and <code>Surname</code>. <code>pparker</code> was created by hand in Lab 1 with only a display name, so both fields were empty.</div>
+          <div class="row fix"><span class="lbl">Fix</span> The filter also matches <code>Name</code>: <code>(GivenName -eq 'Peter' -and Surname -eq 'Parker') -or Name -eq 'Peter Parker'</code>. Caught in testing, before the real run, which skipped him and flagged him for review.</div>
+        </div>
+      </div>
+
+      <div class="issue">
+        <div class="err">Temporary passwords were visible on screen during testing <span class="d"># screenshots</span></div>
+        <div class="body">
+          <div class="row"><span class="lbl">Symptom</span> While testing Bruce's first sign-in, the password handoff list was open in the DC01 console behind the CLIENT01 window, and it showed up in the screenshots.</div>
+          <div class="row"><span class="lbl">Cause</span> The handoff file had been opened in the console to read Bruce's password, and the window was left open.</div>
+          <div class="row fix"><span class="lbl">Fix</span> Those screenshots were cropped to the CLIENT01 window before publishing, and the handoff file was deleted once it had been used. In production, temporary passwords go to the new hire's manager over a secure channel, or the user sets their own through self-service password reset.</div>
+        </div>
+      </div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== KNOWN ISSUES ===================== -->
+  <section class="doc" id="known" aria-labelledby="h-kn">
+    <div class="tabs"><span class="tab">Get-KnownIssue.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-kn"><span class="fold"></span><span class="rg">#region</span> Known issues and next steps</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Item</th><th>Production approach / next step</th></tr></thead>
+        <tbody>
+          <tr><td>Ticket notes are posted by hand</td><td>osTicket has an API: the script could post its own log as an internal note and close the ticket</td></tr>
+          <tr><td>The report runs on demand</td><td>Scheduled task every Monday, report attached to a ticket or emailed to the team</td></tr>
+          <tr><td><code>svc-osticket</code> password never expires</td><td>Group Managed Service Account (gMSA) with automatic password rotation</td></tr>
+          <tr><td>Temporary passwords in a CSV, even briefly</td><td>Deliver through a password manager share, or use self-service password reset</td></tr>
+          <tr><td>Logs and archive live on the domain controller</td><td>A separate file server with backups; DCs should run as little as possible</td></tr>
+          <tr><td>On-premises AD only</td><td><b>Next:</b> a Microsoft Graph PowerShell version for Entra ID, building on AZ-900</td></tr>
+        </tbody>
+      </table></div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== FILES ===================== -->
+  <section class="doc" id="files" aria-labelledby="h-files">
+    <div class="tabs"><span class="tab">Get-ChildItem <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-files"><span class="fold"></span><span class="rg">#region</span> Files in this repo</h2>
+<pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; Get-ChildItem -Exclude *.jpg</span>
+
+    Directory: emilagui01/powershell-automation-lab
+
+Mode          Length Name
+----          ------ ----
+-a----        8094 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/Get-LabUserReport.ps1">Get-LabUserReport.ps1</a>
+-a----       10709 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/New-LabUsers.ps1">New-LabUsers.ps1</a>
+-a----         121 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/NewHires-520879.csv">NewHires-520879.csv</a>
+-a----         671 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/NewHires.csv">NewHires.csv</a>
+-a----        7401 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/Remove-LabUser.ps1">Remove-LabUser.ps1</a>
+-a----        2619 <a href="log-01-onboard-dryrun.txt">log-01-onboard-dryrun.txt</a>
+-a----        4341 <a href="log-02-onboard-run.txt">log-02-onboard-run.txt</a>
+-a----        2136 <a href="log-03-onboard-rerun.txt">log-03-onboard-rerun.txt</a>
+-a----         698 <a href="log-04-offboard-dryrun.txt">log-04-offboard-dryrun.txt</a>
+-a----         619 <a href="log-05-offboard-slang.txt">log-05-offboard-slang.txt</a>
+-a----         639 <a href="log-06-ticket-520879-dryrun.txt">log-06-ticket-520879-dryrun.txt</a>
+-a----        1021 <a href="log-07-ticket-520879-run.txt">log-07-ticket-520879-run.txt</a>
+-a----         511 <a href="log-08-ticket-125558-dryrun.txt">log-08-ticket-125558-dryrun.txt</a>
+-a----         647 <a href="log-09-ticket-125558-run.txt">log-09-ticket-125558-run.txt</a>
+-a----       13158 <a href="report-1-lockout-found.html" target="_blank" rel="noopener">report-1-lockout-found.html</a>
+-a----       14294 <a href="report-2-expiring-45-days.html" target="_blank" rel="noopener">report-2-expiring-45-days.html</a>
+-a----       12695 <a href="report-3-after-unlock.html" target="_blank" rel="noopener">report-3-after-unlock.html</a>
+-a----        3384 <a href="https://github.com/emilagui01/powershell-automation-lab/blob/main/report-4-final.csv">report-4-final.csv</a>
+-a----       13639 <a href="report-4-final.html" target="_blank" rel="noopener">report-4-final.html</a>
+
+<span class="d"># plus 32 screenshots (*.jpg), index.html and README.md</span></pre>
+      <p>The logs and reports are the real output from DC01, renamed so they sort in order. The password handoff files are not included; they were deleted in the lab.</p>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  <!-- ===================== SERIES ===================== -->
+  <section class="doc" id="series" aria-labelledby="h-ser">
+    <div class="tabs"><span class="tab">Get-HomeLabSeries.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
+    <div class="script">
+      <h2 id="h-ser"><span class="fold"></span><span class="rg">#region</span> Home lab series</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>#</th><th>Lab</th><th>Status</th><th>Focus</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><a href="https://emilagui01.github.io/ad-homelab/">Windows Server 2022 Active Directory</a></td><td class="ok">Complete</td><td>Domain, DNS, DHCP, Group Policy, account tickets</td></tr>
+          <tr><td>2</td><td><a href="https://emilagui01.github.io/helpdesk-lab/">Help Desk Ticketing System</a></td><td class="ok">Complete</td><td>osTicket on Ubuntu, AD/LDAP integration, SLAs, escalation, knowledge base</td></tr>
+          <tr><td>3</td><td>PowerShell Automation <span style="color:#666">(this page)</span></td><td class="ok">Complete</td><td>Onboarding, offboarding and reporting scripts driven by tickets</td></tr>
+        </tbody>
+      </table></div>
+      <div class="actions"><a class="btn primary" href="https://emilagui01.github.io/#labs">Back to the portfolio</a><a class="btn" href="#top">Back to top</a></div>
+      <p class="endregion">#endregion</p>
+    </div>
+  </section>
+
+  </main>
+
+  <!-- ===================== COMMANDS ADD-ON (nav) ===================== -->
+  <aside class="commands" aria-label="Page sections">
+    <div class="cmd-head"><span class="tab">Commands <span class="x" aria-hidden="true">&#10005;</span></span><span class="close" aria-hidden="true">&#10005;</span></div>
+    <div class="cmd-body">
+      <div class="field mod"><span>Modules:</span><span class="box">Lab3 <span aria-hidden="true">&#8964;</span></span><span class="refresh" aria-hidden="true">Refresh</span></div>
+      <div class="field"><label for="cmdfilter">Name:</label><input id="cmdfilter" type="search" placeholder="filter" autocomplete="off"><span></span></div>
+      <nav class="cmd-list" id="cmdlist">
+        <div class="grp">Lab3:</div>
+        <a href="#top">Get-Lab3Summary <small>top</small></a>
+        <a href="#overview">Get-Help about_Lab3 <small>overview</small></a>
+        <a href="#layout">Get-LabLayout <small>AD + shares</small></a>
+        <a href="#onboarding">New-LabUsers <small>phase 1</small></a>
+        <a href="#offboarding">Remove-LabUser <small>phase 2</small></a>
+        <a href="#reporting">Get-LabUserReport <small>phase 3</small></a>
+        <a href="#reports">Get-ChildItem *.html <small>reports</small></a>
+        <a href="#tickets">Invoke-TicketWorkflow <small>phase 4</small></a>
+        <a href="#source">Show-Source <small>full code</small></a>
+        <a href="#verify">Invoke-Pester <small>verify</small></a>
+        <a href="#troubleshooting">Get-TroubleshootingLog</a>
+        <a href="#known">Get-KnownIssue <small>next steps</small></a>
+        <a href="#files">Get-LabArtifact <small>files</small></a>
+        <a href="#series">Get-HomeLabSeries</a>
+        <div class="none" id="cmdnone">No matching commands.</div>
+      </nav>
+      <div class="cmd-btns">
+        <a class="btn" href="#source" title="Jump to the scripts">Run</a>
+        <a class="btn" href="https://github.com/emilagui01/powershell-automation-lab" title="Open the GitHub repo">Insert</a>
+        <a class="btn" href="#" id="copylink" title="Copy a link to this page">Copy</a>
+      </div>
+    </div>
+  </aside>
+  </div>
+
+  <div class="statusbar"><span class="grow" id="status">Completed</span><span id="lncol">Ln 1 Col 1</span><span class="vsep z"></span><span class="zoom" aria-hidden="true"><i></i>100%</span></div>
+</div>
+
+<footer class="page">
+  Emil Aguirre Herrera &middot; CompTIA Network+ &middot; Microsoft Azure Fundamentals (AZ-900)<br>
+  <a href="https://emilagui01.github.io/">Portfolio</a><a href="https://github.com/emilagui01">GitHub</a><a href="https://linkedin.com/in/emilagui01">LinkedIn</a>
+</footer>
+
+<script>
+(function () {
+  document.documentElement.classList.add('js');
+
+  // ISE-style script tabs
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('#viewer [role="tab"]'));
+  function select(t, focus) {
+    tabs.forEach(function (x) {
+      var on = x === t;
+      x.setAttribute('aria-selected', on ? 'true' : 'false');
+      x.tabIndex = on ? 0 : -1;
+      document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+    });
+    if (focus) t.focus();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var n = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        select(tabs[n], true); e.preventDefault();
+      }
+    });
+  });
+  if (tabs.length) select(tabs[0]);
+
+  // Commands pane: Name filter
+  var input = document.getElementById('cmdfilter');
+  var links = Array.prototype.slice.call(document.querySelectorAll('#cmdlist a'));
+  var none = document.getElementById('cmdnone');
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase(), shown = 0;
+    links.forEach(function (a) {
+      var hit = !q || a.textContent.toLowerCase().indexOf(q) !== -1;
+      a.style.display = hit ? '' : 'none'; if (hit) shown++;
+    });
+    none.style.display = shown ? 'none' : 'block';
+  });
+
+  // Copy button: copy page link
+  var copy = document.getElementById('copylink');
+  copy.addEventListener('click', function (e) {
+    e.preventDefault();
+    var url = location.href.split('#')[0];
+    var done = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy'; }, 1500); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(done, function () {}); }
+  });
+
+  // Highlight current section in the Commands list and status bar
+  var status = document.getElementById('status');
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var docs = Array.prototype.slice.call(document.querySelectorAll('main .doc'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var id = en.target.id, a = map[id];
+        links.forEach(function (x) { x.classList.remove('on'); });
+        if (a) { a.classList.add('on'); status.textContent = 'Running: ' + a.firstChild.textContent.trim(); }
+      });
+    }, { rootMargin: '-35% 0px -60% 0px' });
+    docs.forEach(function (d) { io.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>
