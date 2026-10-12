@@ -7,7 +7,7 @@
 <meta name="description" content="PowerShell automation for an Active Directory lab domain: bulk onboarding from CSV, safe offboarding, account health reporting, and an osTicket ticket workflow. Home Lab 3 of 3 by Emil Aguirre Herrera.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Windows PowerShell ISE, default light theme */
@@ -253,15 +253,178 @@
     .statusbar .zoom, .statusbar .vsep.z { display: none; }
     .cmd-btns { display: none; }
   }
+
+  /* ================= View bar + easy-read view =================
+     Easy-read keeps ALL of the project content, restyled into a light,
+     readable layout, with a plain-English note at the start of each part. */
+  html { scroll-padding-top: 64px; }
+  .view-bar {
+    position: sticky; top: 0; z-index: 1000;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 20px;
+    background: linear-gradient(#262c34, #1b2026); border-bottom: 2px solid #0c0e11;
+    font-family: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.3;
+  }
+  .view-bar .vb-home { color: #c9d3de; text-decoration: none; font-weight: 700; }
+  .view-bar .vb-home:hover { color: #fff; }
+  .view-toggle {
+    font-family: inherit; font-size: 14px; font-weight: 700; line-height: 1.2; letter-spacing: 0;
+    padding: 8px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+    border: 2px solid #ffb547; background: #ffb547; color: #1a1200;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .view-toggle:hover { background: #ffc875; }
+  .view-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .view-toggle .aa { font-size: 15px; background: #1a1200; color: #ffb547; border-radius: 4px; padding: 1px 5px; }
+  .view-toggle .to-tech { display: none; }
+  body.easy .view-toggle .to-easy { display: none; }
+  body.easy .view-toggle .to-tech { display: inline; }
+  body.easy .view-bar { background: #fff; border-bottom: 1px solid #d9dee4; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  body.easy .view-bar .vb-home { color: #1a5fb4; }
+  body.easy .view-toggle { background: #fff; color: #1a5fb4; border-color: #1a5fb4; }
+  body.easy .view-toggle:hover { background: #eaf1fb; }
+  body.easy .view-toggle:focus-visible { outline-color: #1a5fb4; }
+  body.easy .view-toggle .aa { background: #1a5fb4; color: #fff; }
+
+  .easy-view, .ev-explain { display: none; }
+  body.easy .easy-view, body.easy .ev-explain { display: block; }
+
+  body.easy {
+    background: #f4f6f8 !important; background-image: none !important; color: #1f2933;
+    font-family: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif; font-size: 18px; line-height: 1.7;
+  }
+  body.easy h1, body.easy h2, body.easy h3 { font-family: inherit; }
+  body.easy pre, body.easy code {
+    font-family: Consolas, "Cascadia Mono", "JetBrains Mono", "Ubuntu Mono", "Lucida Console", monospace;
+  }
+
+  .ev-explain {
+    background: #eef5ff; border-left: 4px solid #1a5fb4; border-radius: 0 8px 8px 0;
+    padding: 12px 16px; margin: 6px 0 18px; color: #1f2933;
+    font-family: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif; font-size: 17px; line-height: 1.6;
+    white-space: normal;
+  }
+  .ev-explain b { color: #0f3f80; }
+
+  .ev-main { max-width: 820px; margin: 0 auto; padding: 28px 20px 8px; border: 0; min-width: 0; }
+  .easy-view h1 { font-size: clamp(30px, 5.5vw, 42px); line-height: 1.2; margin: 4px 0 14px; color: #1f2933; font-weight: 700; }
+  .easy-view h2 { font-size: 24px; line-height: 1.3; margin: 0 0 12px; color: #1f2933; }
+  .easy-view h3 { font-size: 19px; margin: 0 0 4px; color: #1f2933; }
+  .easy-view p { margin: 0 0 12px; }
+  .easy-view a { color: #1a5fb4; }
+  .ev-kicker { color: #1e7a3c; font-weight: 700; font-size: 16px; margin: 0 !important; }
+  .ev-lede { font-size: 20px; color: #3e4c59; }
+  .ev-card { background: #fff; border: 1px solid #d9dee4; border-radius: 10px; padding: 24px 28px; margin: 20px 0; }
+  .ev-card ul { margin: 0; padding-left: 24px; }
+  .ev-card li { margin: 6px 0; }
+  .ev-card > p:last-child { margin-bottom: 0; }
+  .ev-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .ev-stats div { background: #f4f6f8; border-radius: 8px; padding: 12px 14px; }
+  .ev-stats b { display: block; font-size: 30px; line-height: 1.1; color: #1a5fb4; }
+  .ev-stats span { font-size: 16px; color: #3e4c59; }
+  .ev-tags { list-style: none; padding: 0 !important; display: flex; flex-wrap: wrap; gap: 8px; }
+  .ev-tags li { margin: 0 !important; background: #eaf1fb; color: #0f3f80; border-radius: 20px; padding: 3px 12px; font-size: 16px; }
+  .ev-divider { margin: 36px 0 6px !important; font-size: 28px !important; }
+  .ev-divider + p { color: #3e4c59; }
+
+  @media (max-width: 600px) {
+    .view-bar { padding: 8px 12px; font-size: 13px; }
+    .view-toggle { font-size: 13px; padding: 7px 10px; }
+    .vb-long { display: none; }
+    .ev-card { padding: 20px 18px; }
+    body.easy { font-size: 17px; }
+  }
+  @media print { .view-bar { display: none; } }
+  aside.commands { top: 52px; max-height: calc(100vh - 52px); }
+  body.easy .ise .titlebar, body.easy .menubar, body.easy .toolbar, body.easy .statusbar, body.easy aside.commands,
+  body.easy .doc > .tabs, body.easy .splitter, body.easy .script h2 .fold, body.easy .script h2 .rg,
+  body.easy .endregion, body.easy .script h3 .cm, body.easy .help > div:first-child,
+  body.easy .help > div:last-child, body.easy .help .kw { display: none !important; }
+  body.easy .script::before { display: none; }
+  body.easy figcaption::before { content: none; }
+  body.easy .ise { background: transparent; border: none; box-shadow: none; max-width: 1000px; margin: 8px auto 0; }
+  body.easy .workspace { display: block; }
+  body.easy .ise main { border: none; padding: 0 16px; }
+  body.easy .doc { border: 1px solid #d9dee4; border-radius: 10px; background: #fff; margin: 0 0 20px; overflow: hidden; }
+  body.easy .script { padding: 24px 28px 22px; }
+  body.easy .script h2 { font-family: inherit; font-size: 26px; font-weight: 700; color: #1f2933; }
+  body.easy .script h3 { font-size: 19px; color: #1f2933; }
+  body.easy .help { font-family: inherit; color: #1f2933; font-size: 17px; }
+  body.easy .help .ind { padding-left: 0; }
+  body.easy .help h1 { color: #1f2933; }
+  body.easy .help .notes dt { font-weight: 700; color: #52606d; }
+  body.easy a { color: #1a5fb4; }
+  body.easy .console a { color: #7fe3ff; }
+  body.easy footer.page { color: #52606d; }
+  body.easy footer.page a { color: #1a5fb4; }
+  @media (max-width: 640px) { body.easy .script { padding: 18px 16px; } body.easy .ise main { padding: 0 10px; } }
 </style>
 </head>
 <body>
+<script>
+  // Apply the saved view before the page draws. Shared with the main portfolio page,
+  // so a visitor who picked easy-read there sees it here too. ?view=easy forces it.
+  (function () {
+    var v = null;
+    try { v = new URLSearchParams(location.search).get('view'); } catch (e) {}
+    if (v !== 'easy' && v !== 'tech') { try { v = localStorage.getItem('portfolio-view'); } catch (e) {} }
+    if (v === 'easy') document.body.classList.add('easy');
+  })();
+</script>
+<div class="view-bar">
+  <a class="vb-home" href="https://emilagui01.github.io/">&larr; <span class="vb-long">Emil Aguirre Herrera &middot; </span>Portfolio</a>
+  <button class="view-toggle" id="viewToggle" type="button">
+    <span class="aa" aria-hidden="true">Aa</span>
+    <span class="to-easy">Easy-read view</span>
+    <span class="to-tech">Switch to tech view</span>
+  </button>
+</div>
+<div class="easy-view"><main class="ev-main">
+  <p class="ev-kicker">Home Lab 3 of 3 &middot; Completed</p>
+  <h1>Automating new-hire and departing-employee accounts</h1>
+  <p class="ev-lede">Setting up accounts for new hires and shutting off access when someone leaves are two of the
+    most repeated jobs in IT. Done by hand, they are slow and easy to get wrong. I wrote three small programs, called
+    scripts, that do this work automatically on the company network from Lab 1, with safety checks built in.</p>
+  <section class="ev-card">
+    <h2>Results</h2>
+    <div class="ev-stats">
+      <div><b>17</b><span>accounts created</span></div>
+      <div><b>2</b><span>employees offboarded, nothing deleted</span></div>
+      <div><b>3</b><span>bad requests caught before they caused problems</span></div>
+      <div><b>4 sec</b><span>to set up 15 new hires</span></div>
+    </div>
+  </section>
+  <section class="ev-card">
+    <h2>The short version</h2>
+    <ul>
+      <li><b>New hires:</b> reads a spreadsheet from HR and sets up each person's account, team access and private
+        drive.</li>
+      <li><b>Departing employees:</b> turns off the account, removes access and archives the files. Nothing is
+        deleted, so it can be undone.</li>
+      <li><b>Account health report:</b> lists who is locked out, who is disabled, which accounts were never used,
+        and whose password needs attention.</li>
+      <li>Every change can be previewed first, is logged, and is linked to the help desk request that asked for it.</li>
+    </ul>
+  </section>
+  <section class="ev-card">
+    <h2>Skills this shows</h2>
+    <ul class="ev-tags">
+      <li>PowerShell scripting</li><li>Automating account setup and removal</li><li>Active Directory</li>
+      <li>File permissions</li><li>Logging and reporting</li><li>Working from help desk tickets</li>
+      <li>Security-minded design</li>
+    </ul>
+  </section>
+  <h2 class="ev-divider">Full project details</h2>
+  <p>Below is everything from the project. Each part starts with a short plain-English note. The code and command
+    output are kept exactly as they were, as proof of the work.</p>
+</main></div>
+
 <div class="ise">
 
   <!-- ===================== WINDOW CHROME ===================== -->
   <div class="titlebar">
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="2" width="16" height="14" rx="1.5" fill="#2c6fb7"/><rect x="1" y="2" width="16" height="3" fill="#7fb2e8"/><path d="M4 8.2l3 2-3 2" stroke="#fff" stroke-width="1.6" fill="none"/><path d="M8.5 12.5h5" stroke="#fff" stroke-width="1.6"/></svg>
-    <span class="title">Administrator: Windows PowerShell ISE &mdash; Home Lab 3: PowerShell Automation</span>
+    <span class="title">Administrator: Windows PowerShell ISE &middot; Home Lab 3: PowerShell Automation</span>
     <span class="wbtn" aria-hidden="true">&#8212;</span><span class="wbtn" aria-hidden="true">&#9744;</span><span class="wbtn x" aria-hidden="true">&#10005;</span>
   </div>
   <nav class="menubar" aria-label="Site">
@@ -326,6 +489,7 @@
     <div class="tabs"><span class="tab">about_Lab3.help.txt <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-ov"><span class="fold"></span><span class="rg">#region</span> Overview</h2>
+<div class="ev-explain"><b>In plain English:</b> What the scripts do and why. A script is a small program that does a job automatically. These three handle new hires, departing employees and an account health check, and every run is tied to a help desk request.</div>
       <p class="lede">The first two labs built a Windows domain and a help desk to support it. This lab automates the work that help desk does most often: setting up accounts for new hires, shutting off access when someone leaves, and checking which accounts need attention.</p>
       <p>Every script previews its changes with <code>-WhatIf</code> before making them, logs every action, and is safe to run twice. Each real run is tied to an osTicket ticket number, which is written onto the account in AD. Anyone looking at an account later can find the request behind it.</p>
       <div class="tbl"><table>
@@ -347,6 +511,7 @@
     <div class="tabs"><span class="tab">Get-LabLayout.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-lay"><span class="fold"></span><span class="rg">#region</span> What was added to the domain</h2>
+<div class="ev-explain"><b>In plain English:</b> What I added to the company network from my first project so the scripts have somewhere to put things: a folder and a team for each department, a separate place for disabled accounts, and a private drive for each employee that only they can open.</div>
       <p>Lab 3 reuses the Lab 1 domain. Department OUs sit <em>inside</em> <code>OU=Lab Users</code>, so the existing Lab 1 Group Policy (S: drive mapping, Control Panel restriction) applies to every new hire automatically. Disabled accounts go to an OU <em>outside</em> it, so those policies stop applying.</p>
 <pre class="tree" aria-label="Active Directory structure">
 <b>emillab.local</b>
@@ -402,6 +567,7 @@
     <div class="tabs"><span class="tab">New-LabUsers.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-on"><span class="fold"></span><span class="rg">#region</span> Phase 1: Onboarding</h2>
+<div class="ev-explain"><b>In plain English:</b> The new hire script. It reads a spreadsheet from HR and sets up each person's account, team access and private drive. I tested it with bad rows on purpose, like a department that doesn't exist and a person who already had an account, and it caught every one. 15 accounts took about four seconds, and running it a second time created no duplicates.</div>
       <p>One command turns a CSV from HR into working accounts. For each row the script:</p>
       <ol>
         <li>Checks the row: first and last name present, department one of IT, HR, Finance, Marketing</li>
@@ -464,6 +630,7 @@
     <div class="tabs"><span class="tab">Remove-LabUser.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-off"><span class="fold"></span><span class="rg">#region</span> Phase 2: Offboarding</h2>
+<div class="ev-explain"><b>In plain English:</b> The departing employee script. It turns off the account, removes access and archives the person's files, but never deletes anything, so it can be undone if HR made a mistake. I tested the safety checks first: it refused to touch the administrator account and skipped a name that didn't exist.</div>
       <p>When someone leaves, the account is locked down and kept, not deleted. Deleting loses the account's ID, its group history and its files, and can't be undone if HR made a mistake. For each username the script:</p>
       <ol>
         <li><b>Refuses</b> protected accounts: Administrator, krbtgt, Guest, any Domain Admins member, anything in Service Accounts</li>
@@ -537,6 +704,7 @@ HomeDirectory     :</pre>
     <div class="tabs"><span class="tab">Get-LabUserReport.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-rep"><span class="fold"></span><span class="rg">#region</span> Phase 3: Account health report</h2>
+<div class="ev-explain"><b>In plain English:</b> The account health report. It checks every account and lists who is locked out, who is disabled, which accounts were never used, and whose password needs attention. The reports here are the real ones it produced, and you can open each one.</div>
       <p>A read-only script that checks every account in the domain and answers the questions a help desk gets asked: who is locked out, who is disabled, which accounts have never been used, and whose password is a problem. It writes a CSV for filtering in Excel and an HTML report that can go to a manager or onto a ticket.</p>
       <div class="tbl"><table>
         <thead><tr><th>Check</th><th>How</th></tr></thead>
@@ -614,6 +782,7 @@ HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-153705.html</pre>
     <div class="tabs"><span class="tab">Invoke-TicketWorkflow.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-tk"><span class="fold"></span><span class="rg">#region</span> Phase 4: Running it from tickets</h2>
+<div class="ev-explain"><b>In plain English:</b> How the scripts are run from help desk requests, the way a real IT team works. HR submits the request, the script runs with that request's number, and the number is saved on the account so anyone can trace why it changed. Departing employees get a faster deadline because leftover access is a security risk.</div>
       <p>In a real IT team, nobody runs an account script because they felt like it. HR sends a request, the request becomes a ticket, and the work is recorded on that ticket. Two help topics were added to the <a href="https://emilagui01.github.io/helpdesk-lab/">Lab 2</a> osTicket server for this:</p>
       <div class="tbl"><table>
         <thead><tr><th>Help topic</th><th>Department</th><th>Priority / SLA</th><th>Type</th></tr></thead>
@@ -677,6 +846,7 @@ Wanda Maximoff   False CN=Wanda Maximoff,OU=Disabled Users,DC=emillab,DC=local D
     <div class="tabs"><span class="tab">Show-Source.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-src"><span class="fold"></span><span class="rg">#region</span> The scripts</h2>
+<div class="ev-explain"><b>In plain English:</b> The full code of all three scripts, exactly as I ran them. Use the tabs to switch between them. The table after the code explains the main design decisions.</div>
       <p>The full source, exactly as run on DC01. Pick a tab to switch files, the way ISE does. Each tab also shows that script's real output underneath. The files are also in the <a href="https://github.com/emilagui01/powershell-automation-lab">GitHub repo</a>.</p>
       <div class="viewer" id="viewer">
         <div class="tabs" role="tablist" aria-label="Scripts">
@@ -1355,6 +1525,7 @@ HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-164134.html</pre>
     <div class="tabs"><span class="tab">Lab3.Tests.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-ver"><span class="fold"></span><span class="rg">#region</span> Verification</h2>
+<div class="ev-explain"><b>In plain English:</b> A summary of every check I did, written in the style of an automated test report. All 16 passed, and each one is backed by a screenshot, log or report on this page.</div>
       <p>Every claim on this page was checked on the lab machines and is backed by a screenshot, log or report above. The results are summarized here in the style of Pester, PowerShell's test framework. These checks were done by hand, not by a Pester run.</p>
 <pre class="console wrap"><span class="ps">PS C:\Scripts\Lab3&gt; Invoke-Pester .\Lab3.Tests.ps1</span>
 
@@ -1390,6 +1561,7 @@ HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-164134.html</pre>
     <div class="tabs"><span class="tab">Debug.log <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-ts"><span class="fold"></span><span class="rg">#region</span> Troubleshooting log</h2>
+<div class="ev-explain"><b>In plain English:</b> Problems I ran into while building this, and how I fixed them.</div>
 
       <div class="issue">
         <div class="err">A pipeline pasted into the ISE console ran in two halves <span class="d"># ISE console, DC01</span></div>
@@ -1426,6 +1598,7 @@ HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-164134.html</pre>
     <div class="tabs"><span class="tab">Get-KnownIssue.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-kn"><span class="fold"></span><span class="rg">#region</span> Known issues and next steps</h2>
+<div class="ev-explain"><b>In plain English:</b> What I would improve for a real company, like having the scripts post their results to the help desk on their own and running the report automatically every week.</div>
       <div class="tbl"><table>
         <thead><tr><th>Item</th><th>Production approach / next step</th></tr></thead>
         <tbody>
@@ -1446,6 +1619,7 @@ HTML: C:\Scripts\Lab3\Reports\UserReport-20261001-164134.html</pre>
     <div class="tabs"><span class="tab">Get-ChildItem <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-files"><span class="fold"></span><span class="rg">#region</span> Files in this repo</h2>
+<div class="ev-explain"><b>In plain English:</b> Every file in this project, including the real logs and reports. Click any of them to open it.</div>
 <pre class="console"><span class="ps">PS C:\Scripts\Lab3&gt; Get-ChildItem -Exclude *.jpg</span>
 
     Directory: emilagui01/powershell-automation-lab
@@ -1483,6 +1657,7 @@ Mode          Length Name
     <div class="tabs"><span class="tab">Get-HomeLabSeries.ps1 <span class="x" aria-hidden="true">&#10005;</span></span></div>
     <div class="script">
       <h2 id="h-ser"><span class="fold"></span><span class="rg">#region</span> Home lab series</h2>
+<div class="ev-explain"><b>In plain English:</b> How this project connects to my other two projects.</div>
       <div class="tbl"><table>
         <thead><tr><th>#</th><th>Lab</th><th>Status</th><th>Focus</th></tr></thead>
         <tbody>
@@ -1604,6 +1779,14 @@ Mode          Length Name
     docs.forEach(function (d) { io.observe(d); });
   }
 })();
+</script>
+<script>
+  (function () {
+    document.getElementById('viewToggle').addEventListener('click', function () {
+      var easy = document.body.classList.toggle('easy');
+      try { localStorage.setItem('portfolio-view', easy ? 'easy' : 'tech'); } catch (e) {}
+    });
+  })();
 </script>
 </body>
 </html>
